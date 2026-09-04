@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { apiUrl } from "./api";
 
 function Register({ onRegister, onGoLogin }) {
     const [form, setForm] = useState({
@@ -8,7 +9,19 @@ function Register({ onRegister, onGoLogin }) {
         college: "",
         experienceLevel: "Beginner",
         skills: "",
-        interests: ""
+        interests: "",
+        preferredTechnologies: "",
+        previousProjectTitle: "",
+        previousProjectDescription: "",
+        previousProjectTechnologies: "",
+        previousProjectRole: "",
+        currentTeamSize: 1,
+        availableDevelopmentDays: 30,
+        availableBudget: 10000,
+        github: "",
+        linkedin: "",
+        availability: "Available",
+        bio: ""
     });
 
     const [message, setMessage] = useState("");
@@ -28,28 +41,69 @@ function Register({ onRegister, onGoLogin }) {
         setLoading(true);
 
         try {
+            const previousProjects = [];
+
+            if (form.previousProjectTitle.trim()) {
+                previousProjects.push({
+                    title: form.previousProjectTitle.trim(),
+                    description:
+                        form.previousProjectDescription.trim(),
+                    technologies: form.previousProjectTechnologies
+                        .split(",")
+                        .map((item) => item.trim())
+                        .filter(Boolean),
+                    role: form.previousProjectRole.trim()
+                });
+            }
+
+            const body = {
+                name: form.name.trim(),
+                email: form.email.trim(),
+                password: form.password,
+                college: form.college.trim(),
+                experienceLevel: form.experienceLevel,
+
+                skills: form.skills
+                    .split(",")
+                    .map((item) => item.trim())
+                    .filter(Boolean),
+
+                interests: form.interests
+                    .split(",")
+                    .map((item) => item.trim())
+                    .filter(Boolean),
+
+                preferredTechnologies:
+                    form.preferredTechnologies
+                        .split(",")
+                        .map((item) => item.trim())
+                        .filter(Boolean),
+
+                previousProjects,
+
+                currentTeamSize:
+                    Number(form.currentTeamSize) || 1,
+
+                availableDevelopmentDays:
+                    Number(form.availableDevelopmentDays) || 0,
+
+                availableBudget:
+                    Number(form.availableBudget) || 0,
+
+                github: form.github.trim(),
+                linkedin: form.linkedin.trim(),
+                availability: form.availability,
+                bio: form.bio.trim()
+            };
+
             const response = await fetch(
-                "http://localhost:5000/api/auth/register",
+                apiUrl("/api/auth/register"),
                 {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"
                     },
-                    body: JSON.stringify({
-                        name: form.name.trim(),
-                        email: form.email.trim(),
-                        password: form.password,
-                        college: form.college.trim(),
-                        experienceLevel: form.experienceLevel,
-                        skills: form.skills
-                            .split(",")
-                            .map(skill => skill.trim())
-                            .filter(Boolean),
-                        interests: form.interests
-                            .split(",")
-                            .map(interest => interest.trim())
-                            .filter(Boolean)
-                    })
+                    body: JSON.stringify(body)
                 }
             );
 
@@ -66,24 +120,17 @@ function Register({ onRegister, onGoLogin }) {
                 "Account created successfully 🎉"
             );
 
-            setForm({
-                name: "",
-                email: "",
-                password: "",
-                college: "",
-                experienceLevel: "Beginner",
-                skills: "",
-                interests: ""
-            });
-
-            if (onRegister) {
-                setTimeout(() => {
+            setTimeout(() => {
+                if (onRegister) {
                     onRegister();
-                }, 700);
-            }
+                }
+            }, 700);
 
         } catch (error) {
-            console.error("Registration error:", error);
+            console.error(
+                "Registration error:",
+                error
+            );
 
             setMessage(
                 "Cannot connect to MENTORX backend"
@@ -107,7 +154,8 @@ function Register({ onRegister, onGoLogin }) {
                 </h1>
 
                 <p>
-                    Join MENTORX and start building with the right team.
+                    Build your profile so MENTORX can
+                    personalize your project analysis.
                 </p>
 
                 <form onSubmit={handleRegister}>
@@ -166,10 +214,18 @@ function Register({ onRegister, onGoLogin }) {
                         </option>
                     </select>
 
+                    <textarea
+                        name="bio"
+                        placeholder="Short bio"
+                        rows="3"
+                        value={form.bio}
+                        onChange={handleChange}
+                    />
+
                     <input
                         type="text"
                         name="skills"
-                        placeholder="Skills: Python, React, Java"
+                        placeholder="Skills: Python, React, MongoDB"
                         value={form.skills}
                         onChange={handleChange}
                     />
@@ -179,6 +235,119 @@ function Register({ onRegister, onGoLogin }) {
                         name="interests"
                         placeholder="Interests: AI, Web Development"
                         value={form.interests}
+                        onChange={handleChange}
+                    />
+
+                    <input
+                        type="text"
+                        name="preferredTechnologies"
+                        placeholder="Preferred tech: Python, React, Node.js"
+                        value={form.preferredTechnologies}
+                        onChange={handleChange}
+                    />
+
+                    <h3>
+                        Previous Project
+                    </h3>
+
+                    <input
+                        type="text"
+                        name="previousProjectTitle"
+                        placeholder="Previous project title"
+                        value={form.previousProjectTitle}
+                        onChange={handleChange}
+                    />
+
+                    <textarea
+                        name="previousProjectDescription"
+                        placeholder="Previous project description"
+                        rows="3"
+                        value={form.previousProjectDescription}
+                        onChange={handleChange}
+                    />
+
+                    <input
+                        type="text"
+                        name="previousProjectTechnologies"
+                        placeholder="Technologies: React, Node.js, MongoDB"
+                        value={
+                            form.previousProjectTechnologies
+                        }
+                        onChange={handleChange}
+                    />
+
+                    <input
+                        type="text"
+                        name="previousProjectRole"
+                        placeholder="Your role: Frontend Developer"
+                        value={form.previousProjectRole}
+                        onChange={handleChange}
+                    />
+
+                    <h3>
+                        Your Resources
+                    </h3>
+
+                    <input
+                        type="number"
+                        name="currentTeamSize"
+                        min="1"
+                        placeholder="Current team size"
+                        value={form.currentTeamSize}
+                        onChange={handleChange}
+                    />
+
+                    <input
+                        type="number"
+                        name="availableDevelopmentDays"
+                        min="0"
+                        placeholder="Available development days"
+                        value={
+                            form.availableDevelopmentDays
+                        }
+                        onChange={handleChange}
+                    />
+
+                    <input
+                        type="number"
+                        name="availableBudget"
+                        min="0"
+                        placeholder="Available budget"
+                        value={form.availableBudget}
+                        onChange={handleChange}
+                    />
+
+                    <select
+                        name="availability"
+                        value={form.availability}
+                        onChange={handleChange}
+                    >
+                        <option value="Available">
+                            Available
+                        </option>
+
+                        <option value="Part-time">
+                            Part-time
+                        </option>
+
+                        <option value="Limited">
+                            Limited
+                        </option>
+                    </select>
+
+                    <input
+                        type="url"
+                        name="github"
+                        placeholder="GitHub URL"
+                        value={form.github}
+                        onChange={handleChange}
+                    />
+
+                    <input
+                        type="url"
+                        name="linkedin"
+                        placeholder="LinkedIn URL"
+                        value={form.linkedin}
                         onChange={handleChange}
                     />
 
@@ -214,3 +383,4 @@ function Register({ onRegister, onGoLogin }) {
 }
 
 export default Register;
+

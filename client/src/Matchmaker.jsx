@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { apiUrl } from "./api";
 
 function Matchmaker() {
     const [projects, setProjects] = useState([]);
@@ -14,7 +15,7 @@ function Matchmaker() {
         const loadProjects = async () => {
             try {
                 const response = await fetch(
-                    "http://localhost:5000/api/projects",
+                    apiUrl("/api/projects"),
                     {
                         headers: {
                             Authorization: `Bearer ${token}`
@@ -53,7 +54,7 @@ function Matchmaker() {
             setMatches([]);
 
             const response = await fetch(
-                `http://localhost:5000/api/match/${selectedProject}`,
+                apiUrl(`/api/match/${selectedProject}`),
                 {
                     headers: {
                         Authorization: `Bearer ${token}`

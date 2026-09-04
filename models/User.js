@@ -33,7 +33,11 @@ const userSchema = new mongoose.Schema(
 
         experienceLevel: {
             type: String,
-            enum: ["Beginner", "Intermediate", "Advanced"],
+            enum: [
+                "Beginner",
+                "Intermediate",
+                "Advanced"
+            ],
             default: "Beginner"
         },
 
@@ -45,6 +49,56 @@ const userSchema = new mongoose.Schema(
         interests: {
             type: [String],
             default: []
+        },
+
+        preferredTechnologies: {
+            type: [String],
+            default: []
+        },
+
+        previousProjects: {
+            type: [
+                {
+                    title: {
+                        type: String,
+                        trim: true
+                    },
+
+                    description: {
+                        type: String,
+                        default: ""
+                    },
+
+                    technologies: {
+                        type: [String],
+                        default: []
+                    },
+
+                    role: {
+                        type: String,
+                        default: ""
+                    }
+                }
+            ],
+            default: []
+        },
+
+        currentTeamSize: {
+            type: Number,
+            min: 1,
+            default: 1
+        },
+
+        availableDevelopmentDays: {
+            type: Number,
+            min: 0,
+            default: 0
+        },
+
+        availableBudget: {
+            type: Number,
+            min: 0,
+            default: 0
         },
 
         github: {
@@ -67,4 +121,7 @@ const userSchema = new mongoose.Schema(
     }
 );
 
-module.exports = mongoose.model("User", userSchema);
+module.exports = mongoose.model(
+    "User",
+    userSchema
+);

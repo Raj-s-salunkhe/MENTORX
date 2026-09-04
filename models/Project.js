@@ -10,13 +10,38 @@ const projectSchema = new mongoose.Schema(
 
         description: {
             type: String,
-            required: true
+            required: true,
+            trim: true
         },
 
-        owner: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "User",
-            required: true
+        domain: {
+            type: String,
+            default: ""
+        },
+
+        projectType: {
+            type: String,
+            default: ""
+        },
+
+        problemStatement: {
+            type: String,
+            default: ""
+        },
+
+        objectives: {
+            type: [String],
+            default: []
+        },
+
+        keyFeatures: {
+            type: [String],
+            default: []
+        },
+
+        category: {
+            type: String,
+            default: "General"
         },
 
         skillsRequired: {
@@ -29,21 +54,53 @@ const projectSchema = new mongoose.Schema(
             default: []
         },
 
-        category: {
-            type: String,
-            default: "General"
+        recommendedTechnologies: {
+            type: [String],
+            default: []
+        },
+
+        estimatedDays: {
+            type: Number,
+            min: 0,
+            default: 0
+        },
+
+        estimatedBudget: {
+            type: Number,
+            min: 0,
+            default: 0
+        },
+
+        recommendedTeamSize: {
+            type: Number,
+            min: 1,
+            default: 1
         },
 
         difficulty: {
             type: String,
-            enum: ["Beginner", "Intermediate", "Advanced"],
+            enum: [
+                "Beginner",
+                "Intermediate",
+                "Advanced"
+            ],
             default: "Beginner"
         },
 
         status: {
             type: String,
-            enum: ["Open", "In Progress", "Completed"],
+            enum: [
+                "Open",
+                "In Progress",
+                "Completed"
+            ],
             default: "Open"
+        },
+
+        owner: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            required: true
         },
 
         members: [
@@ -58,4 +115,7 @@ const projectSchema = new mongoose.Schema(
     }
 );
 
-module.exports = mongoose.model("Project", projectSchema);
+module.exports = mongoose.model(
+    "Project",
+    projectSchema
+);

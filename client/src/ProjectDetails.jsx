@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
+import { apiUrl } from "./api";
 
-function ProjectDetails({ projectId, onBack }) {
+function ProjectDetails({ projectId, onBack, onEdit }) {
     const [project, setProject] = useState(null);
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState("");
@@ -10,7 +11,7 @@ function ProjectDetails({ projectId, onBack }) {
     const loadProject = async () => {
         try {
             const response = await fetch(
-                `http://localhost:5000/api/projects/${projectId}`,
+                apiUrl(`/api/projects/${projectId}`),
                 {
                     headers: {
                         Authorization: `Bearer ${token}`
@@ -35,13 +36,16 @@ function ProjectDetails({ projectId, onBack }) {
     };
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         loadProject();
+        // loadProject is intentionally recreated because projectId selects its resource.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [projectId]);
 
     const joinProject = async () => {
         try {
             const response = await fetch(
-                `http://localhost:5000/api/projects/${projectId}/join`,
+                apiUrl(`/api/projects/${projectId}/join`),
                 {
                     method: "POST",
                     headers: {
@@ -57,7 +61,7 @@ function ProjectDetails({ projectId, onBack }) {
             if (response.ok) {
                 loadProject();
             }
-        } catch (error) {
+        } catch {
             setMessage("Unable to connect to backend");
         }
     };
@@ -65,7 +69,7 @@ function ProjectDetails({ projectId, onBack }) {
     const leaveProject = async () => {
         try {
             const response = await fetch(
-                `http://localhost:5000/api/projects/${projectId}/leave`,
+                apiUrl(`/api/projects/${projectId}/leave`),
                 {
                     method: "POST",
                     headers: {
@@ -81,8 +85,39 @@ function ProjectDetails({ projectId, onBack }) {
             if (response.ok) {
                 loadProject();
             }
-        } catch (error) {
+        } catch {
             setMessage("Unable to connect to backend");
+        }
+    };
+
+    const deleteProject = async () => {
+        if (!window.confirm("Delete this project permanently?")) return;
+
+        try {
+            const response = await fetch(apiUrl(`/api/projects/${projectId}`), {
+                method: "DELETE",
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.message || "Failed to delete project");
+            onBack();
+        } catch (error) {
+            setMessage(error.message);
+        }
+    };
+
+    const removeMember = async (memberId) => {
+        try {
+            const response = await fetch(
+                apiUrl(`/api/projects/${projectId}/members/${memberId}`),
+                { method: "DELETE", headers: { Authorization: `Bearer ${token}` } }
+            );
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.message || "Failed to remove member");
+            setMessage(data.message);
+            loadProject();
+        } catch (error) {
+            setMessage(error.message);
         }
     };
 
@@ -190,9 +225,15 @@ function ProjectDetails({ projectId, onBack }) {
                         )}
 
                         {isOwner && (
-                            <span className="owner-label">
-                                👑 You are the owner
-                            </span>
+                            <>
+                                <span className="owner-label">👑 You are the owner</span>
+                                <button className="join-project-btn" onClick={() => onEdit(project)}>
+                                    Edit Project
+                                </button>
+                                <button className="leave-project-btn" onClick={deleteProject}>
+                                    Delete Project
+                                </button>
+                            </>
                         )}
 
                     </div>
@@ -303,6 +344,15 @@ function ProjectDetails({ projectId, onBack }) {
                                             {member.email}
                                         </span>
                                     </div>
+
+                                    {isOwner && String(member._id) !== String(currentUserId) && (
+                                        <button
+                                            className="delete-analysis-btn"
+                                            onClick={() => removeMember(member._id)}
+                                        >
+                                            Remove
+                                        </button>
+                                    )}
                                 </div>
                             )
                         )}

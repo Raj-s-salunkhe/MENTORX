@@ -1,74 +1,148 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 
-function Feasibility() {
+const API_URL = "http://localhost:5000";
+
+const Feasibility = ({
+    onBack,
+    onOpenAnalyses
+}) => {
     const [projects, setProjects] = useState([]);
-    const [selectedProject, setSelectedProject] = useState("");
+    const [profile, setProfile] = useState(null);
 
-    const [availableDays, setAvailableDays] = useState(60);
-    const [availableBudget, setAvailableBudget] = useState(30000);
-    const [teamSize, setTeamSize] = useState(1);
+    const [selectedProject, setSelectedProject] =
+        useState("");
 
-    const [analysis, setAnalysis] = useState(null);
-    const [loading, setLoading] = useState(false);
-    const [message, setMessage] = useState("");
+    const [analysis, setAnalysis] =
+        useState(null);
 
+    const [loading, setLoading] =
+        useState(false);
+
+    const [saving, setSaving] =
+        useState(false);
+
+    const [error, setError] =
+        useState("");
+
+    const [message, setMessage] =
+        useState("");
+
+
+    const getToken = () =>
+        localStorage.getItem("token");
+
+
+    /*
+     * Load projects
+     */
     useEffect(() => {
-        const loadProjects = async () => {
-            try {
-                const token = localStorage.getItem("token");
-
-                const response = await fetch(
-                    "http://localhost:5000/api/projects",
-                    {
-                        headers: {
-                            Authorization: `Bearer ${token}`
-                        }
-                    }
-                );
-
-                const data = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(
-                        data.message || "Failed to load projects"
-                    );
-                }
-
-                setProjects(data.projects || []);
-            } catch (error) {
-                setMessage(error.message);
-            }
-        };
-
         loadProjects();
+        loadProfile();
     }, []);
 
-    const analyzeFeasibility = async () => {
+
+    const loadProjects = async () => {
+        try {
+            const response = await fetch(
+                `${API_URL}/api/projects`,
+                {
+                    headers: {
+                        Authorization:
+                            `Bearer ${getToken()}`
+                    }
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    data.message ||
+                    "Failed to load projects"
+                );
+            }
+
+            setProjects(
+                data.projects || []
+            );
+
+        } catch (err) {
+            console.error(err);
+            setError(err.message);
+        }
+    };
+
+
+    /*
+     * Load user profile
+     */
+    const loadProfile = async () => {
+        try {
+            const response = await fetch(
+                `${API_URL}/api/auth/profile`,
+                {
+                    headers: {
+                        Authorization:
+                            `Bearer ${getToken()}`
+                    }
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    data.message ||
+                    "Failed to load profile"
+                );
+            }
+
+            setProfile(
+                data.user || data
+            );
+
+        } catch (err) {
+            console.error(
+                "Profile error:",
+                err
+            );
+        }
+    };
+
+
+    /*
+     * Analyze
+     */
+    const handleAnalyze = async () => {
         if (!selectedProject) {
-            setMessage("Please select a project first.");
+            setError(
+                "Please select a project first."
+            );
             return;
         }
 
         try {
             setLoading(true);
+            setError("");
             setMessage("");
             setAnalysis(null);
 
-            const token = localStorage.getItem("token");
-
             const response = await fetch(
-                "http://localhost:5000/api/feasibility/analyze",
+                `${API_URL}/api/feasibility/analyze`,
                 {
                     method: "POST",
+
                     headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`
+                        "Content-Type":
+                            "application/json",
+
+                        Authorization:
+                            `Bearer ${getToken()}`
                     },
+
                     body: JSON.stringify({
-                        projectId: selectedProject,
-                        availableDays: Number(availableDays),
-                        availableBudget: Number(availableBudget),
-                        currentTeamSize: Number(teamSize)
+                        projectId:
+                            selectedProject
                     })
                 }
             );
@@ -77,41 +151,61 @@ function Feasibility() {
 
             if (!response.ok) {
                 throw new Error(
-                    data.message || "Feasibility analysis failed"
+                    data.message ||
+                    "Analysis failed"
                 );
             }
 
-            setAnalysis(data.analysis);
+            setAnalysis(
+                data.analysis
+            );
 
-        } catch (error) {
-            setMessage(error.message);
+            setMessage(
+                "AI analysis completed ✅"
+            );
+
+        } catch (err) {
+            console.error(err);
+            setError(err.message);
+
         } finally {
             setLoading(false);
         }
     };
 
-    const saveAnalysis = async () => {
-        if (!analysis || !selectedProject) {
-            setMessage("Analyze a project first.");
+
+    /*
+     * Save
+     */
+    const handleSave = async () => {
+        if (!selectedProject) {
+            setError(
+                "Please select a project."
+            );
             return;
         }
 
         try {
-            const token = localStorage.getItem("token");
+            setSaving(true);
+            setError("");
+            setMessage("");
 
             const response = await fetch(
-                "http://localhost:5000/api/feasibility/save",
+                `${API_URL}/api/feasibility/save`,
                 {
                     method: "POST",
+
                     headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`
+                        "Content-Type":
+                            "application/json",
+
+                        Authorization:
+                            `Bearer ${getToken()}`
                     },
+
                     body: JSON.stringify({
-                        projectId: selectedProject,
-                        availableDays: Number(availableDays),
-                        availableBudget: Number(availableBudget),
-                        currentTeamSize: Number(teamSize)
+                        projectId:
+                            selectedProject
                     })
                 }
             );
@@ -120,229 +214,442 @@ function Feasibility() {
 
             if (!response.ok) {
                 throw new Error(
-                    data.message || "Failed to save analysis"
+                    data.message ||
+                    "Failed to save analysis"
+                );
+            }
+
+            /*
+             * Update displayed analysis
+             * with saved result.
+             */
+            if (data.analysis) {
+                setAnalysis(
+                    data.analysis
                 );
             }
 
             setMessage(
-                "Feasibility analysis saved successfully ✅"
+                "Analysis saved successfully ✅"
             );
 
-        } catch (error) {
-            setMessage(error.message);
+        } catch (err) {
+            console.error(err);
+            setError(err.message);
+
+        } finally {
+            setSaving(false);
         }
     };
 
-    const getScoreClass = (score = 0) => {
-        if (score >= 75) return "score-good";
-        if (score >= 60) return "score-medium";
-        return "score-low";
+
+    const selectedProjectData =
+        projects.find(
+            (project) =>
+                project._id ===
+                selectedProject
+        );
+
+
+    const getScore = (key) => {
+        return (
+            analysis?.[key]?.score ??
+            0
+        );
     };
 
+
     return (
-        <div className="feasibility-page">
+        <div className="page-container feasibility-page">
 
-            <div className="feasibility-header">
+            <div className="page-header">
 
-                <p className="dashboard-tag">
-                    MENTORX PROJECT FEASIBILITY
-                </p>
+                <div>
+                    <button
+                        className="secondary-btn"
+                        onClick={onBack}
+                    >
+                        ← Back
+                    </button>
 
-                <h1>
-                    Can you actually
-                    <span> build this?</span>
-                </h1>
+                    <h1>
+                        AI Feasibility Analysis
+                    </h1>
 
-                <p>
-                    MENTORX compares your project with your
-                    skills, team, time, budget and resources.
-                </p>
-
-            </div>
-
-            <div className="feasibility-input-card">
-
-                <div className="panel-heading">
-                    <div className="panel-title">
-                        <span className="panel-icon">
-                            🔍
-                        </span>
-
-                        <div>
-                            <h2>
-                                Project Analysis
-                            </h2>
-
-                            <p>
-                                Select a project and provide your
-                                current resources.
-                            </p>
-                        </div>
-                    </div>
+                    <p>
+                        Find out whether you
+                        can realistically
+                        build a project.
+                    </p>
                 </div>
-
-                <div className="feasibility-form">
-
-                    <div className="feasibility-field">
-
-                        <label>
-                            Project
-                        </label>
-
-                        <select
-                            value={selectedProject}
-                            onChange={(e) =>
-                                setSelectedProject(
-                                    e.target.value
-                                )
-                            }
-                        >
-                            <option value="">
-                                Choose a project
-                            </option>
-
-                            {projects.map((project) => (
-                                <option
-                                    key={project._id}
-                                    value={project._id}
-                                >
-                                    {project.title}
-                                </option>
-                            ))}
-                        </select>
-
-                    </div>
-
-                    <div className="feasibility-field">
-
-                        <label>
-                            Available Development Days
-                        </label>
-
-                        <input
-                            type="number"
-                            min="1"
-                            value={availableDays}
-                            onChange={(e) =>
-                                setAvailableDays(
-                                    e.target.value
-                                )
-                            }
-                        />
-
-                    </div>
-
-                    <div className="feasibility-field">
-
-                        <label>
-                            Available Budget (₹)
-                        </label>
-
-                        <input
-                            type="number"
-                            min="0"
-                            value={availableBudget}
-                            onChange={(e) =>
-                                setAvailableBudget(
-                                    e.target.value
-                                )
-                            }
-                        />
-
-                    </div>
-
-                    <div className="feasibility-field">
-
-                        <label>
-                            Current Team Size
-                        </label>
-
-                        <input
-                            type="number"
-                            min="1"
-                            value={teamSize}
-                            onChange={(e) =>
-                                setTeamSize(
-                                    e.target.value
-                                )
-                            }
-                        />
-
-                    </div>
-
-                </div>
-
-                {message && (
-                    <div className="projects-message">
-                        {message}
-                    </div>
-                )}
 
                 <button
-                    className="feasibility-analyze-btn"
-                    onClick={analyzeFeasibility}
-                    disabled={loading}
+                    className="secondary-btn"
+                    onClick={onOpenAnalyses}
                 >
-                    {loading
-                        ? "Analyzing Project..."
-                        : "Analyze Feasibility 🤖"}
+                    📊 My Analyses
                 </button>
 
             </div>
 
-            {loading && (
-                <div className="feasibility-loading">
 
-                    <div className="loading-robot">
-                        🤖
-                    </div>
+            {profile && (
+                <div className="card">
 
                     <h2>
-                        MENTORX is analyzing your project...
+                        Your Current Capabilities
                     </h2>
 
-                    <p>
-                        Comparing technical, skill, time,
-                        financial and team feasibility.
-                    </p>
+                    <div className="stats-grid">
+
+                        <div className="stat-card">
+                            <strong>
+                                {
+                                    profile.experienceLevel ||
+                                    "Beginner"
+                                }
+                            </strong>
+
+                            <span>
+                                Experience
+                            </span>
+                        </div>
+
+                        <div className="stat-card">
+                            <strong>
+                                {
+                                    profile.skills?.length ||
+                                    0
+                                }
+                            </strong>
+
+                            <span>
+                                Skills
+                            </span>
+                        </div>
+
+                        <div className="stat-card">
+                            <strong>
+                                {
+                                    profile.preferredTechnologies
+                                        ?.length ||
+                                    0
+                                }
+                            </strong>
+
+                            <span>
+                                Preferred Technologies
+                            </span>
+                        </div>
+
+                        <div className="stat-card">
+                            <strong>
+                                {
+                                    profile.previousProjects
+                                        ?.length ||
+                                    0
+                                }
+                            </strong>
+
+                            <span>
+                                Previous Projects
+                            </span>
+                        </div>
+
+                        <div className="stat-card">
+                            <strong>
+                                {
+                                    profile.currentTeamSize ||
+                                    1
+                                }
+                            </strong>
+
+                            <span>
+                                Team Size
+                            </span>
+                        </div>
+
+                        <div className="stat-card">
+                            <strong>
+                                {
+                                    profile.availableDevelopmentDays ||
+                                    0
+                                }
+                            </strong>
+
+                            <span>
+                                Available Days
+                            </span>
+                        </div>
+
+                        <div className="stat-card">
+                            <strong>
+                                ₹
+                                {
+                                    profile.availableBudget ||
+                                    0
+                                }
+                            </strong>
+
+                            <span>
+                                Available Budget
+                            </span>
+                        </div>
+
+                    </div>
 
                 </div>
             )}
 
-            {analysis && !loading && (
+
+            <div className="card">
+
+                <h2>
+                    Select Project
+                </h2>
+
+                <select
+                    className="input"
+                    value={selectedProject}
+                    onChange={(e) => {
+                        setSelectedProject(
+                            e.target.value
+                        );
+
+                        setAnalysis(null);
+                        setMessage("");
+                        setError("");
+                    }}
+                >
+                    <option value="">
+                        -- Select Project --
+                    </option>
+
+                    {projects.map(
+                        (project) => (
+                            <option
+                                key={project._id}
+                                value={project._id}
+                            >
+                                {project.title}
+                            </option>
+                        )
+                    )}
+                </select>
+
+
+                {selectedProjectData && (
+                    <div
+                        className="project-preview"
+                        style={{
+                            marginTop: "20px"
+                        }}
+                    >
+                        <h3>
+                            {
+                                selectedProjectData.title
+                            }
+                        </h3>
+
+                        <p>
+                            {
+                                selectedProjectData.description
+                            }
+                        </p>
+                    </div>
+                )}
+
+
+                <button
+                    className="primary-btn"
+                    onClick={handleAnalyze}
+                    disabled={
+                        loading ||
+                        !selectedProject
+                    }
+                    style={{
+                        marginTop: "20px"
+                    }}
+                >
+                    {loading
+                        ? "🤖 Analyzing..."
+                        : "🤖 Analyze Feasibility"}
+                </button>
+
+            </div>
+
+
+            {message && (
+                <div className="success-message">
+                    {message}
+                </div>
+            )}
+
+
+            {error && (
+                <div className="error-message">
+                    {error}
+                </div>
+            )}
+
+
+            {analysis && (
                 <div className="feasibility-results">
 
-                    <div className="overall-feasibility-card">
+                    <div className="card">
 
-                        <div>
+                        <h2>
+                            Overall Feasibility
+                        </h2>
 
-                            <p className="result-label">
-                                OVERALL FEASIBILITY
-                            </p>
-
-                            <h2>
-                                {analysis.projectTitle}
-                            </h2>
-
-                            <p>
-                                {analysis.overallFeasibility.reason}
-                            </p>
-
+                        <div
+                            style={{
+                                fontSize: "48px",
+                                fontWeight: "bold"
+                            }}
+                        >
+                            {
+                                analysis
+                                    .overallFeasibility
+                                    ?.score ??
+                                0
+                            }/100
                         </div>
 
-                        <div className="overall-score">
+                        <h3>
+                            {
+                                analysis
+                                    .overallFeasibility
+                                    ?.classification ||
+                                "Unknown"
+                            }
+                        </h3>
 
-                            <div
-                                className={`score-circle ${getScoreClass(
-                                    analysis.overallFeasibility.score
-                                )}`}
-                            >
+                        <p>
+                            {
+                                analysis
+                                    .overallFeasibility
+                                    ?.recommendation ||
+                                "No recommendation"
+                            }
+                        </p>
+
+                        <p>
+                            {
+                                analysis
+                                    .overallFeasibility
+                                    ?.reason ||
+                                ""
+                            }
+                        </p>
+
+                    </div>
+
+
+                    <div className="card">
+
+                        <h2>
+                            Feasibility Breakdown
+                        </h2>
+
+                        <div className="stats-grid">
+
+                            <div className="stat-card">
                                 <strong>
-                                    {analysis.overallFeasibility.score}%
+                                    {getScore(
+                                        "technicalFeasibility"
+                                    )}
                                 </strong>
-
                                 <span>
-                                    {analysis.overallFeasibility.classification}
+                                    Technical
+                                </span>
+                            </div>
+
+                            <div className="stat-card">
+                                <strong>
+                                    {getScore(
+                                        "skillFeasibility"
+                                    )}
+                                </strong>
+                                <span>
+                                    Skills
+                                </span>
+                            </div>
+
+                            <div className="stat-card">
+                                <strong>
+                                    {getScore(
+                                        "timeFeasibility"
+                                    )}
+                                </strong>
+                                <span>
+                                    Time
+                                </span>
+                            </div>
+
+                            <div className="stat-card">
+                                <strong>
+                                    {getScore(
+                                        "financialFeasibility"
+                                    )}
+                                </strong>
+                                <span>
+                                    Financial
+                                </span>
+                            </div>
+
+                            <div className="stat-card">
+                                <strong>
+                                    {getScore(
+                                        "dataFeasibility"
+                                    )}
+                                </strong>
+                                <span>
+                                    Data
+                                </span>
+                            </div>
+
+                            <div className="stat-card">
+                                <strong>
+                                    {getScore(
+                                        "resourceFeasibility"
+                                    )}
+                                </strong>
+                                <span>
+                                    Resources
+                                </span>
+                            </div>
+
+                            <div className="stat-card">
+                                <strong>
+                                    {getScore(
+                                        "teamFeasibility"
+                                    )}
+                                </strong>
+                                <span>
+                                    Team
+                                </span>
+                            </div>
+
+                            <div className="stat-card">
+                                <strong>
+                                    {getScore(
+                                        "scalabilityFeasibility"
+                                    )}
+                                </strong>
+                                <span>
+                                    Scalability
+                                </span>
+                            </div>
+
+                            <div className="stat-card">
+                                <strong>
+                                    {getScore(
+                                        "commercialFeasibility"
+                                    )}
+                                </strong>
+                                <span>
+                                    Commercial
                                 </span>
                             </div>
 
@@ -350,638 +657,353 @@ function Feasibility() {
 
                     </div>
 
-                    <div className="decision-card">
 
-                        <span>
-                            Recommendation
-                        </span>
+                    <div className="card">
 
-                        <strong>
-                            {analysis.overallFeasibility.recommendation}
-                        </strong>
+                        <h2>
+                            Skills
+                        </h2>
 
                         <p>
-                            {analysis.overallFeasibility.classification}
+                            {
+                                analysis
+                                    .skillFeasibility
+                                    ?.analysis ||
+                                ""
+                            }
+                        </p>
+
+                        <h3>
+                            Skill Matches
+                        </h3>
+
+                        <ul>
+                            {(
+                                analysis
+                                    .skillFeasibility
+                                    ?.skillMatches ||
+                                []
+                            ).map(
+                                (skill, index) => (
+                                    <li key={index}>
+                                        ✅ {skill}
+                                    </li>
+                                )
+                            )}
+                        </ul>
+
+                        <h3>
+                            Skill Gaps
+                        </h3>
+
+                        <ul>
+                            {(
+                                analysis
+                                    .skillFeasibility
+                                    ?.skillGaps ||
+                                []
+                            ).map(
+                                (skill, index) => (
+                                    <li key={index}>
+                                        ⚠️ {skill}
+                                    </li>
+                                )
+                            )}
+                        </ul>
+
+                    </div>
+
+
+                    <div className="card">
+
+                        <h2>
+                            Technical Feasibility
+                        </h2>
+
+                        <p>
+                            {
+                                analysis
+                                    .technicalFeasibility
+                                    ?.analysis ||
+                                ""
+                            }
                         </p>
 
                     </div>
 
-                    <div className="feasibility-score-grid">
 
-                        <ScoreCard
-                            title="Technical"
-                            score={analysis.technicalFeasibility.score}
-                        />
-
-                        <ScoreCard
-                            title="Skills"
-                            score={analysis.skillFeasibility.score}
-                        />
-
-                        <ScoreCard
-                            title="Time"
-                            score={analysis.timeFeasibility.score}
-                        />
-
-                        <ScoreCard
-                            title="Financial"
-                            score={analysis.financialFeasibility.score}
-                        />
-
-                        <ScoreCard
-                            title="Data"
-                            score={analysis.dataFeasibility.score}
-                        />
-
-                        <ScoreCard
-                            title="Resources"
-                            score={analysis.resourceFeasibility.score}
-                        />
-
-                        <ScoreCard
-                            title="Team"
-                            score={analysis.teamFeasibility.score}
-                        />
-
-                        <ScoreCard
-                            title="Scalability"
-                            score={analysis.scalabilityFeasibility.score}
-                        />
-
-                        <ScoreCard
-                            title="Commercial"
-                            score={analysis.commercialFeasibility.score}
-                        />
-
-                    </div>
-
-                    <div className="feasibility-two-column">
-
-                        <section className="feasibility-panel">
-
-                            <PanelTitle
-                                icon="🧠"
-                                title="Skill Gap Analysis"
-                                subtitle="Your skills vs project requirements"
-                            />
-
-                            <h3>
-                                Matched Skills
-                            </h3>
-
-                            <div className="skill-tags">
-
-                                {analysis.skillFeasibility.skillMatches?.length > 0 ? (
-                                    analysis.skillFeasibility.skillMatches.map(
-                                        (skill) => (
-                                            <span key={skill}>
-                                                ✅ {skill}
-                                            </span>
-                                        )
-                                    )
-                                ) : (
-                                    <p>
-                                        No direct skill matches found.
-                                    </p>
-                                )}
-
-                            </div>
-
-                            <h3>
-                                Skill Gaps
-                            </h3>
-
-                            <div className="skill-tags skill-gap-tags">
-
-                                {analysis.skillFeasibility.skillGaps?.length > 0 ? (
-                                    analysis.skillFeasibility.skillGaps.map(
-                                        (skill) => (
-                                            <span key={skill}>
-                                                ⚠ {skill}
-                                            </span>
-                                        )
-                                    )
-                                ) : (
-                                    <p>
-                                        No major skill gaps detected.
-                                    </p>
-                                )}
-
-                            </div>
-
-                        </section>
-
-                        <section className="feasibility-panel">
-
-                            <PanelTitle
-                                icon="⏱️"
-                                title="Time Analysis"
-                                subtitle="Development capacity"
-                            />
-
-                            <AnalysisScore
-                                score={analysis.timeFeasibility.score}
-                                label="Time feasibility"
-                            />
-
-                            <p className="analysis-text">
-                                {analysis.timeFeasibility.analysis}
-                            </p>
-
-                            <p className="effort-text">
-                                {analysis.timeFeasibility.estimatedEffort}
-                            </p>
-
-                            <h3>
-                                Risks
-                            </h3>
-
-                            <AnalysisList
-                                items={analysis.timeFeasibility.risks}
-                                icon="⚠"
-                            />
-
-                            <h3>
-                                Recommendations
-                            </h3>
-
-                            <AnalysisList
-                                items={
-                                    analysis.timeFeasibility
-                                        .recommendations
-                                }
-                                icon="✓"
-                            />
-
-                        </section>
-
-                    </div>
-
-                    <div className="feasibility-two-column">
-
-                        <section className="feasibility-panel">
-
-                            <PanelTitle
-                                icon="💻"
-                                title="Technical Feasibility"
-                                subtitle="Architecture and implementation"
-                            />
-
-                            <AnalysisScore
-                                score={
-                                    analysis.technicalFeasibility.score
-                                }
-                                label="Technical score"
-                            />
-
-                            <p className="analysis-text">
-                                {analysis.technicalFeasibility.analysis}
-                            </p>
-
-                            <h3>
-                                Strengths
-                            </h3>
-
-                            <AnalysisList
-                                items={
-                                    analysis.technicalFeasibility
-                                        .strengths
-                                }
-                                icon="✓"
-                            />
-
-                            <h3>
-                                Risks
-                            </h3>
-
-                            <AnalysisList
-                                items={
-                                    analysis.technicalFeasibility
-                                        .risks
-                                }
-                                icon="⚠"
-                            />
-
-                        </section>
-
-                        <section className="feasibility-panel">
-
-                            <PanelTitle
-                                icon="💰"
-                                title="Financial Analysis"
-                                subtitle="Budget feasibility"
-                            />
-
-                            <AnalysisScore
-                                score={
-                                    analysis.financialFeasibility.score
-                                }
-                                label="Financial score"
-                            />
-
-                            <p className="analysis-text">
-                                {analysis.financialFeasibility.analysis}
-                            </p>
-
-                            <div className="cost-range-card">
-                                {
-                                    analysis.financialFeasibility
-                                        .estimatedCostRange
-                                }
-                            </div>
-
-                            <h3>
-                                Risks
-                            </h3>
-
-                            <AnalysisList
-                                items={
-                                    analysis.financialFeasibility
-                                        .risks
-                                }
-                                icon="⚠"
-                            />
-
-                            <h3>
-                                Recommendations
-                            </h3>
-
-                            <AnalysisList
-                                items={
-                                    analysis.financialFeasibility
-                                        .recommendations
-                                }
-                                icon="✓"
-                            />
-
-                        </section>
-
-                    </div>
-
-                    <div className="feasibility-two-column">
-
-                        <section className="feasibility-panel">
-
-                            <PanelTitle
-                                icon="👥"
-                                title="Team Feasibility"
-                                subtitle="Team capacity and skills"
-                            />
-
-                            <AnalysisScore
-                                score={
-                                    analysis.teamFeasibility.score
-                                }
-                                label="Team score"
-                            />
-
-                            <p className="analysis-text">
-                                {analysis.teamFeasibility.analysis}
-                            </p>
-
-                            <h3>
-                                Team Strengths
-                            </h3>
-
-                            <AnalysisList
-                                items={
-                                    analysis.teamFeasibility
-                                        .teamStrengths
-                                }
-                                icon="✓"
-                            />
-
-                            <h3>
-                                Team Gaps
-                            </h3>
-
-                            <AnalysisList
-                                items={
-                                    analysis.teamFeasibility
-                                        .teamGaps
-                                }
-                                icon="⚠"
-                            />
-
-                        </section>
-
-                        <section className="feasibility-panel">
-
-                            <PanelTitle
-                                icon="📈"
-                                title="Scalability"
-                                subtitle="Future growth assessment"
-                            />
-
-                            <AnalysisScore
-                                score={
-                                    analysis.scalabilityFeasibility.score
-                                }
-                                label="Scalability score"
-                            />
-
-                            <p className="analysis-text">
-                                {analysis.scalabilityFeasibility.analysis}
-                            </p>
-
-                            <h3>
-                                Risks
-                            </h3>
-
-                            <AnalysisList
-                                items={
-                                    analysis.scalabilityFeasibility
-                                        .risks
-                                }
-                                icon="⚠"
-                            />
-
-                            <h3>
-                                Recommendations
-                            </h3>
-
-                            <AnalysisList
-                                items={
-                                    analysis.scalabilityFeasibility
-                                        .recommendations
-                                }
-                                icon="✓"
-                            />
-
-                        </section>
-
-                    </div>
-
-                    <div className="feasibility-two-column">
-
-                        <section className="feasibility-panel">
-
-                            <PanelTitle
-                                icon="🗄️"
-                                title="Data Feasibility"
-                                subtitle="Data availability and privacy"
-                            />
-
-                            <AnalysisScore
-                                score={
-                                    analysis.dataFeasibility.score
-                                }
-                                label="Data score"
-                            />
-
-                            <p className="analysis-text">
-                                {analysis.dataFeasibility.analysis}
-                            </p>
-
-                            <h3>
-                                Required Data
-                            </h3>
-
-                            <AnalysisList
-                                items={
-                                    analysis.dataFeasibility
-                                        .requiredData
-                                }
-                                icon="📌"
-                            />
-
-                            <h3>
-                                Risks
-                            </h3>
-
-                            <AnalysisList
-                                items={
-                                    analysis.dataFeasibility
-                                        .risks
-                                }
-                                icon="⚠"
-                            />
-
-                        </section>
-
-                        <section className="feasibility-panel">
-
-                            <PanelTitle
-                                icon="🧰"
-                                title="Resource Feasibility"
-                                subtitle="Hardware, software and infrastructure"
-                            />
-
-                            <AnalysisScore
-                                score={
-                                    analysis.resourceFeasibility.score
-                                }
-                                label="Resource score"
-                            />
-
-                            <p className="analysis-text">
-                                {analysis.resourceFeasibility.analysis}
-                            </p>
-
-                            <h3>
-                                Required Resources
-                            </h3>
-
-                            <AnalysisList
-                                items={
-                                    analysis.resourceFeasibility
-                                        .requiredResources
-                                }
-                                icon="📌"
-                            />
-
-                            <h3>
-                                Risks
-                            </h3>
-
-                            <AnalysisList
-                                items={
-                                    analysis.resourceFeasibility
-                                        .risks
-                                }
-                                icon="⚠"
-                            />
-
-                        </section>
-
-                    </div>
-
-                    <section className="feasibility-panel">
-
-                        <PanelTitle
-                            icon="💼"
-                            title="Industry / Commercial Feasibility"
-                            subtitle="Real-world potential"
-                        />
-
-                        <AnalysisScore
-                            score={
-                                analysis.commercialFeasibility.score
+                    <div className="card">
+
+                        <h2>
+                            Time Feasibility
+                        </h2>
+
+                        <p>
+                            {
+                                analysis
+                                    .timeFeasibility
+                                    ?.analysis ||
+                                ""
                             }
-                            label="Commercial score"
-                        />
-
-                        <p className="analysis-text">
-                            {analysis.commercialFeasibility.analysis}
                         </p>
 
+                        <p>
+                            <strong>
+                                Estimated Effort:
+                            </strong>{" "}
+                            {
+                                analysis
+                                    .timeFeasibility
+                                    ?.estimatedEffort ||
+                                "N/A"
+                            }
+                        </p>
+
+                    </div>
+
+
+                    <div className="card">
+
+                        <h2>
+                            Financial Feasibility
+                        </h2>
+
+                        <p>
+                            {
+                                analysis
+                                    .financialFeasibility
+                                    ?.analysis ||
+                                ""
+                            }
+                        </p>
+
+                        <p>
+                            <strong>
+                                Estimated Cost:
+                            </strong>{" "}
+                            {
+                                analysis
+                                    .financialFeasibility
+                                    ?.estimatedCostRange ||
+                                "N/A"
+                            }
+                        </p>
+
+                    </div>
+
+
+                    <div className="card">
+
+                        <h2>
+                            Team Feasibility
+                        </h2>
+
+                        <p>
+                            {
+                                analysis
+                                    .teamFeasibility
+                                    ?.analysis ||
+                                ""
+                            }
+                        </p>
+
+                    </div>
+
+
+                    <div className="card">
+
+                        <h2>
+                            Scalability
+                        </h2>
+
+                        <p>
+                            {
+                                analysis
+                                    .scalabilityFeasibility
+                                    ?.analysis ||
+                                ""
+                            }
+                        </p>
+
+                    </div>
+
+
+                    <div className="card">
+
+                        <h2>
+                            Data Feasibility
+                        </h2>
+
+                        <p>
+                            {
+                                analysis
+                                    .dataFeasibility
+                                    ?.analysis ||
+                                ""
+                            }
+                        </p>
+
+                    </div>
+
+
+                    <div className="card">
+
+                        <h2>
+                            Resources
+                        </h2>
+
+                        <p>
+                            {
+                                analysis
+                                    .resourceFeasibility
+                                    ?.analysis ||
+                                ""
+                            }
+                        </p>
+
+                    </div>
+
+
+                    <div className="card">
+
+                        <h2>
+                            Commercial / Industry
+                        </h2>
+
+                        <p>
+                            {
+                                analysis
+                                    .commercialFeasibility
+                                    ?.analysis ||
+                                ""
+                            }
+                        </p>
+
+                    </div>
+
+
+                    <div className="card">
+
+                        <h2>
+                            🚨 Major Risks
+                        </h2>
+
+                        <ul>
+                            {(
+                                analysis
+                                    .majorRisks ||
+                                []
+                            ).map(
+                                (risk, index) => (
+                                    <li key={index}>
+                                        <strong>
+                                            {risk.risk}
+                                        </strong>
+                                        {" — "}
+                                        {risk.severity}
+                                    </li>
+                                )
+                            )}
+                        </ul>
+
+                    </div>
+
+
+                    <div className="card">
+
+                        <h2>
+                            🚀 MVP Recommendation
+                        </h2>
+
                         <h3>
-                            Opportunities
+                            MVP Features
                         </h3>
 
-                        <AnalysisList
-                            items={
-                                analysis.commercialFeasibility
-                                    .commercialOpportunities
-                            }
-                            icon="💡"
-                        />
+                        <ul>
+                            {(
+                                analysis
+                                    .mvpRecommendation
+                                    ?.mvpFeatures ||
+                                []
+                            ).map(
+                                (feature, index) => (
+                                    <li key={index}>
+                                        {feature}
+                                    </li>
+                                )
+                            )}
+                        </ul>
 
                         <h3>
-                            Risks
+                            Future Features
                         </h3>
 
-                        <AnalysisList
-                            items={
-                                analysis.commercialFeasibility
-                                    .risks
-                            }
-                            icon="⚠"
-                        />
-
-                    </section>
-
-                    <section className="feasibility-panel">
-
-                        <PanelTitle
-                            icon="⚠️"
-                            title="Major Risks"
-                            subtitle="Issues that could affect project success"
-                        />
-
-                        <div className="risk-grid">
-
-                            {analysis.majorRisks?.length > 0 ? (
-                                analysis.majorRisks.map(
-                                    (item, index) => (
-                                        <div
-                                            className="risk-card"
-                                            key={`${item.risk}-${index}`}
-                                        >
-                                            <div className="risk-header">
-                                                <strong>
-                                                    {item.risk}
-                                                </strong>
-
-                                                <span>
-                                                    {item.severity}
-                                                </span>
-                                            </div>
-
-                                            <p>
-                                                {item.impact}
-                                            </p>
-
-                                            <small>
-                                                <strong>
-                                                    Mitigation:
-                                                </strong>{" "}
-                                                {item.mitigation}
-                                            </small>
-                                        </div>
-                                    )
-                                )
-                            ) : (
-                                <div className="no-risk">
-                                    No major risks detected.
-                                </div>
-                            )}
-
-                        </div>
-
-                    </section>
-
-                    <section className="feasibility-panel">
-
-                        <PanelTitle
-                            icon="🚀"
-                            title="MVP Recommendation"
-                            subtitle="Start small and expand later"
-                        />
-
-                        <div className="mvp-grid">
-
-                            <div>
-                                <h3>
-                                    Build First
-                                </h3>
-
-                                <AnalysisList
-                                    items={
-                                        analysis.mvpRecommendation
-                                            .mvpFeatures
-                                    }
-                                    icon="✅"
-                                />
-                            </div>
-
-                            <div>
-                                <h3>
-                                    Future Features
-                                </h3>
-
-                                <AnalysisList
-                                    items={
-                                        analysis.mvpRecommendation
-                                            .futureFeatures
-                                    }
-                                    icon="🔮"
-                                />
-                            </div>
-
-                        </div>
-
-                    </section>
-
-                    <section className="feasibility-panel">
-
-                        <PanelTitle
-                            icon="💡"
-                            title="Personalized Recommendations"
-                            subtitle="Based on your current situation"
-                        />
-
-                        <div className="recommendation-list">
-
-                            {analysis.personalizedRecommendations?.map(
-                                (item) => (
-                                    <div
-                                        className="recommendation-item"
-                                        key={item}
-                                    >
-                                        ✅ {item}
-                                    </div>
+                        <ul>
+                            {(
+                                analysis
+                                    .mvpRecommendation
+                                    ?.futureFeatures ||
+                                []
+                            ).map(
+                                (feature, index) => (
+                                    <li key={index}>
+                                        {feature}
+                                    </li>
                                 )
                             )}
+                        </ul>
 
-                        </div>
+                    </div>
 
-                    </section>
 
-                    <div className="feasibility-actions">
+                    <div className="card">
+
+                        <h2>
+                            🎯 Personalized
+                            Recommendations
+                        </h2>
+
+                        <ul>
+                            {(
+                                analysis
+                                    .personalizedRecommendations ||
+                                []
+                            ).map(
+                                (item, index) => (
+                                    <li key={index}>
+                                        {item}
+                                    </li>
+                                )
+                            )}
+                        </ul>
+
+                    </div>
+
+
+                    {/* SAVE BUTTON */}
+
+                    <div className="card">
 
                         <button
-                            className="feasibility-save-btn"
-                            onClick={saveAnalysis}
+                            className="primary-btn"
+                            onClick={handleSave}
+                            disabled={saving}
                         >
-                            💾 Save Analysis
+                            {saving
+                                ? "💾 Saving..."
+                                : "💾 Save Analysis"}
                         </button>
 
                         <button
-                            className="feasibility-analyze-btn"
-                            onClick={analyzeFeasibility}
+                            className="secondary-btn"
+                            onClick={
+                                onOpenAnalyses
+                            }
+                            style={{
+                                marginLeft: "10px"
+                            }}
                         >
-                            🔄 Analyze Again
+                            📊 My Analyses
                         </button>
 
                     </div>
@@ -991,72 +1013,6 @@ function Feasibility() {
 
         </div>
     );
-}
-
-function ScoreCard({ title, score }) {
-    return (
-        <div className="feasibility-score-card">
-            <span>
-                {title}
-            </span>
-
-            <strong>
-                {score}%
-            </strong>
-        </div>
-    );
-}
-
-function PanelTitle({ icon, title, subtitle }) {
-    return (
-        <div className="panel-title">
-            <span className="panel-icon">
-                {icon}
-            </span>
-
-            <div>
-                <h2>
-                    {title}
-                </h2>
-
-                <p>
-                    {subtitle}
-                </p>
-            </div>
-        </div>
-    );
-}
-
-function AnalysisScore({ score, label }) {
-    return (
-        <div className="analysis-score-line">
-            <span>
-                {label}
-            </span>
-
-            <strong>
-                {score}%
-            </strong>
-        </div>
-    );
-}
-
-function AnalysisList({ items = [], icon }) {
-    return (
-        <ul className="analysis-list">
-            {items?.length > 0 ? (
-                items.map((item) => (
-                    <li key={item}>
-                        {icon} {item}
-                    </li>
-                ))
-            ) : (
-                <li>
-                    No information available.
-                </li>
-            )}
-        </ul>
-    );
-}
+};
 
 export default Feasibility;

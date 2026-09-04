@@ -1,9 +1,17 @@
 const { analyzeFeasibility } = require("../services/feasibilityService");
+
 const FeasibilityAnalysis = require("../models/FeasibilityAnalysis");
+
+
+/* =====================================================
+   ANALYZE FEASIBILITY
+===================================================== */
 
 const createFeasibilityAnalysis = async (req, res) => {
     try {
-        const { projectId, save = false, ...userOverrides } = req.body;
+        const {
+            projectId
+        } = req.body;
 
         if (!projectId) {
             return res.status(400).json({
@@ -11,43 +19,47 @@ const createFeasibilityAnalysis = async (req, res) => {
             });
         }
 
-        const analysis = await analyzeFeasibility(
-            req.userId,
-            projectId,
-            userOverrides
-        );
+        const analysis =
+            await analyzeFeasibility(
+                req.userId,
+                projectId
+            );
 
-        let savedAnalysis = null;
+        res.status(200).json({
+            message:
+                "Feasibility analysis completed successfully 🤖",
 
-        if (save) {
-            savedAnalysis = await FeasibilityAnalysis.create({
-                userId: req.userId,
-                projectId,
-                projectTitle: analysis.projectTitle,
-                ...analysis
-            });
-        }
-
-        res.json({
-            message: "Project feasibility analyzed successfully 🤖",
-            saved: Boolean(savedAnalysis),
-            analysis,
-            analysisId: savedAnalysis?._id || null
+            analysis
         });
 
     } catch (error) {
-        console.error("Feasibility analysis error:", error);
+
+        console.error(
+            "Feasibility analysis error:",
+            error
+        );
 
         res.status(500).json({
-            message: "Feasibility analysis failed",
-            error: error.message
+            message:
+                "Feasibility analysis failed",
+
+            error:
+                error.message
         });
     }
 };
+
+
+/* =====================================================
+   SAVE FEASIBILITY
+===================================================== */
 
 const saveFeasibilityAnalysis = async (req, res) => {
     try {
-        const { projectId, ...userOverrides } = req.body;
+
+        const {
+            projectId
+        } = req.body;
 
         if (!projectId) {
             return res.status(400).json({
@@ -55,112 +67,274 @@ const saveFeasibilityAnalysis = async (req, res) => {
             });
         }
 
-        const analysis = await analyzeFeasibility(
-            req.userId,
-            projectId,
-            userOverrides
-        );
 
-        const saved = await FeasibilityAnalysis.create({
-            userId: req.userId,
-            projectId,
-            projectTitle: analysis.projectTitle,
-            ...analysis
-        });
+        /* Run AI analysis */
+
+        const analysis =
+            await analyzeFeasibility(
+                req.userId,
+                projectId
+            );
+
+
+        /* Save result */
+
+        const savedAnalysis =
+            await FeasibilityAnalysis.create({
+
+                userId:
+                    req.userId,
+
+                projectId:
+
+                    projectId,
+
+                projectTitle:
+                    analysis.projectTitle ||
+                    "Untitled Project",
+
+                overallFeasibility:
+                    analysis.overallFeasibility,
+
+                technicalFeasibility:
+                    analysis.technicalFeasibility,
+
+                skillFeasibility:
+                    analysis.skillFeasibility,
+
+                timeFeasibility:
+                    analysis.timeFeasibility,
+
+                financialFeasibility:
+                    analysis.financialFeasibility,
+
+                dataFeasibility:
+                    analysis.dataFeasibility,
+
+                resourceFeasibility:
+                    analysis.resourceFeasibility,
+
+                teamFeasibility:
+                    analysis.teamFeasibility,
+
+                scalabilityFeasibility:
+                    analysis.scalabilityFeasibility,
+
+                commercialFeasibility:
+                    analysis.commercialFeasibility,
+
+                skillGaps:
+                    analysis.skillGaps || [],
+
+                majorRisks:
+                    analysis.majorRisks || [],
+
+                mvpRecommendation:
+                    analysis.mvpRecommendation || {
+                        mvpFeatures: [],
+                        futureFeatures: []
+                    },
+
+                personalizedRecommendations:
+                    analysis.personalizedRecommendations || []
+            });
+
 
         res.status(201).json({
-            message: "Feasibility analysis saved successfully ✅",
-            analysisId: saved._id,
+
+            message:
+                "Analysis saved successfully ✅",
+
+            analysisId:
+                savedAnalysis._id,
+
             analysis
         });
 
+
     } catch (error) {
-        console.error("Save feasibility error:", error);
+
+        console.error(
+            "Save feasibility error:",
+            error
+        );
 
         res.status(500).json({
-            message: "Failed to save feasibility analysis",
-            error: error.message
+
+            message:
+                "Failed to save analysis",
+
+            error:
+                error.message
         });
     }
 };
 
+
+/* =====================================================
+   GET ALL ANALYSES
+===================================================== */
+
 const getFeasibilityAnalyses = async (req, res) => {
+
     try {
-        const analyses = await FeasibilityAnalysis.find({
-            userId: req.userId
-        })
-            .sort({ createdAt: -1 })
+
+        const analyses =
+            await FeasibilityAnalysis.find({
+                userId:
+                    req.userId
+            })
+            .sort({
+                createdAt: -1
+            })
             .select("-__v");
 
-        res.json({
-            message: "Feasibility analyses loaded successfully",
-            count: analyses.length,
+
+        res.status(200).json({
             analyses
         });
 
+
     } catch (error) {
+
+        console.error(
+            "Get analyses error:",
+            error
+        );
+
         res.status(500).json({
-            message: "Failed to load feasibility analyses",
-            error: error.message
+
+            message:
+                "Failed to fetch analyses",
+
+            error:
+                error.message
         });
     }
 };
 
-const getFeasibilityAnalysisById = async (req, res) => {
-    try {
-        const analysis = await FeasibilityAnalysis.findOne({
-            _id: req.params.id,
-            userId: req.userId
-        }).select("-__v");
 
-        if (!analysis) {
-            return res.status(404).json({
-                message: "Feasibility analysis not found"
+/* =====================================================
+   GET SINGLE ANALYSIS
+===================================================== */
+
+const getFeasibilityAnalysisById =
+    async (req, res) => {
+
+        try {
+
+            const analysis =
+                await FeasibilityAnalysis.findOne({
+
+                    _id:
+                        req.params.id,
+
+                    userId:
+                        req.userId
+
+                })
+                .select("-__v");
+
+
+            if (!analysis) {
+
+                return res.status(404).json({
+
+                    message:
+                        "Analysis not found"
+                });
+            }
+
+
+            res.status(200).json({
+                analysis
+            });
+
+
+        } catch (error) {
+
+            console.error(
+                "Get single analysis error:",
+                error
+            );
+
+            res.status(500).json({
+
+                message:
+                    "Failed to fetch analysis",
+
+                error:
+                    error.message
             });
         }
+    };
 
-        res.json({
-            message: "Feasibility analysis loaded successfully",
-            analysis
-        });
 
-    } catch (error) {
-        res.status(500).json({
-            message: "Failed to load feasibility analysis",
-            error: error.message
-        });
-    }
-};
+/* =====================================================
+   DELETE ANALYSIS
+===================================================== */
 
-const deleteFeasibilityAnalysis = async (req, res) => {
-    try {
-        const analysis = await FeasibilityAnalysis.findOneAndDelete({
-            _id: req.params.id,
-            userId: req.userId
-        });
+const deleteFeasibilityAnalysis =
+    async (req, res) => {
 
-        if (!analysis) {
-            return res.status(404).json({
-                message: "Feasibility analysis not found"
+        try {
+
+            const deleted =
+                await FeasibilityAnalysis.findOneAndDelete({
+
+                    _id:
+                        req.params.id,
+
+                    userId:
+                        req.userId
+                });
+
+
+            if (!deleted) {
+
+                return res.status(404).json({
+
+                    message:
+                        "Analysis not found"
+                });
+            }
+
+
+            res.status(200).json({
+
+                message:
+                    "Analysis deleted successfully ✅"
+            });
+
+
+        } catch (error) {
+
+            console.error(
+                "Delete analysis error:",
+                error
+            );
+
+            res.status(500).json({
+
+                message:
+                    "Failed to delete analysis",
+
+                error:
+                    error.message
             });
         }
+    };
 
-        res.json({
-            message: "Feasibility analysis deleted successfully"
-        });
-
-    } catch (error) {
-        res.status(500).json({
-            message: "Failed to delete feasibility analysis",
-            error: error.message
-        });
-    }
-};
 
 module.exports = {
+
     createFeasibilityAnalysis,
+
     saveFeasibilityAnalysis,
+
     getFeasibilityAnalyses,
+
     getFeasibilityAnalysisById,
+
     deleteFeasibilityAnalysis
 };

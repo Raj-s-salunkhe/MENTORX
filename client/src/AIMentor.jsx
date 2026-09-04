@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { apiUrl } from "./api";
 
 function AIMentor() {
     const [title, setTitle] = useState("");
@@ -26,7 +27,7 @@ function AIMentor() {
             const token = localStorage.getItem("token");
 
             const response = await fetch(
-                "http://localhost:5000/api/ai/analyze-project",
+                apiUrl("/api/ai/analyze-project"),
                 {
                     method: "POST",
                     headers: {

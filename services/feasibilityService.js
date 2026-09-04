@@ -1,952 +1,57 @@
+const { GoogleGenAI } = require("@google/genai");
+
 const Project = require("../models/Project");
 const User = require("../models/User");
 
-const normalize = (value) => {
-    if (!value) return "";
+if (!process.env.GEMINI_API_KEY) {
+    throw new Error(
+        "GEMINI_API_KEY is missing from .env"
+    );
+}
 
-    return String(value)
-        .toLowerCase()
-        .trim();
-};
+const ai = new GoogleGenAI({
+    apiKey: process.env.GEMINI_API_KEY
+});
 
-const normalizeArray = (items = []) => {
+/*
+|--------------------------------------------------------------------------
+| Gemini model
+|--------------------------------------------------------------------------
+| Use the model that is available to your Gemini account.
+*/
+const MODEL_NAME = "gemini-3.6-flash";
+
+/*
+|--------------------------------------------------------------------------
+| Helpers
+|--------------------------------------------------------------------------
+*/
+
+const cleanArray = (items) => {
+    if (!Array.isArray(items)) {
+        return [];
+    }
+
     return items
         .filter(Boolean)
-        .map((item) => normalize(item));
+        .map((item) => String(item).trim())
+        .filter(Boolean);
 };
 
-const unique = (items = []) => {
-    return [...new Set(items)];
-};
+const clampScore = (value) => {
+    const number = Number(value);
 
-/*
- * Extract project requirements from the project description.
- */
-const extractRequirements = (description = "") => {
-    const text = normalize(description);
-    const requirements = [];
-
-    const rules = [
-        {
-            keywords: [
-                "login",
-                "user",
-                "authentication",
-                "signup",
-                "register"
-            ],
-            requirement: "User Authentication"
-        },
-        {
-            keywords: [
-                "database",
-                "store data",
-                "save data",
-                "records"
-            ],
-            requirement: "Database Management"
-        },
-        {
-            keywords: [
-                "ai",
-                "artificial intelligence",
-                "machine learning",
-                "ml"
-            ],
-            requirement: "AI / Machine Learning"
-        },
-        {
-            keywords: [
-                "dashboard",
-                "admin panel",
-                "analytics"
-            ],
-            requirement: "Dashboard / Analytics"
-        },
-        {
-            keywords: [
-                "api",
-                "integration",
-                "third party"
-            ],
-            requirement: "API Integration"
-        },
-        {
-            keywords: [
-                "mobile",
-                "android",
-                "ios",
-                "phone"
-            ],
-            requirement: "Mobile Application"
-        },
-        {
-            keywords: [
-                "chat",
-                "messaging",
-                "real time",
-                "realtime"
-            ],
-            requirement: "Real-time Communication"
-        },
-        {
-            keywords: [
-                "payment",
-                "stripe",
-                "razorpay",
-                "checkout"
-            ],
-            requirement: "Payment Integration"
-        },
-        {
-            keywords: [
-                "notification",
-                "email",
-                "sms"
-            ],
-            requirement: "Notification System"
-        },
-        {
-            keywords: [
-                "search",
-                "filter",
-                "recommendation"
-            ],
-            requirement: "Search / Recommendation System"
-        },
-        {
-            keywords: [
-                "upload",
-                "file",
-                "image",
-                "document"
-            ],
-            requirement: "File Management"
-        },
-        {
-            keywords: [
-                "map",
-                "location",
-                "gps"
-            ],
-            requirement: "Location Services"
-        }
-    ];
-
-    for (const rule of rules) {
-        if (
-            rule.keywords.some((keyword) =>
-                text.includes(keyword)
-            )
-        ) {
-            requirements.push(rule.requirement);
-        }
+    if (Number.isNaN(number)) {
+        return 0;
     }
 
-    if (requirements.length === 0) {
-        requirements.push(
-            "User Interface",
-            "Application Logic",
-            "Data Management"
-        );
-    }
-
-    return unique(requirements);
-};
-
-/*
- * Compare user skills against project skills.
- */
-const calculateSkillFeasibility = (
-    userSkills = [],
-    requiredSkills = []
-) => {
-    const skills = normalizeArray(userSkills);
-    const required = normalizeArray(requiredSkills);
-
-    if (required.length === 0) {
-        return {
-            score: 100,
-            skillMatches: [],
-            skillGaps: [],
-            analysis:
-                "No specific technical skills were defined for this project.",
-            recommendations: [
-                "Define the core technical skills required for the project."
-            ]
-        };
-    }
-
-    const skillMatches = required.filter((skill) =>
-        skills.includes(skill)
-    );
-
-    const skillGaps = required.filter(
-        (skill) => !skills.includes(skill)
-    );
-
-    const score = Math.round(
-        (skillMatches.length / required.length) * 100
-    );
-
-    const recommendations = [];
-
-    if (skillGaps.length > 0) {
-        recommendations.push(
-            `Learn or add support for: ${skillGaps.join(", ")}.`
-        );
-    }
-
-    if (score < 60) {
-        recommendations.push(
-            "Consider adding teammates with complementary technical skills."
-        );
-    } else if (score < 80) {
-        recommendations.push(
-            "Close the remaining skill gaps before starting advanced features."
-        );
-    } else {
-        recommendations.push(
-            "Your technical skills cover most of the required project skills."
-        );
-    }
-
-    return {
-        score,
-        skillMatches,
-        skillGaps,
-        analysis:
-            score >= 80
-                ? "The user's skills strongly match the project's requirements."
-                : score >= 60
-                    ? "The user has a reasonable skill match but some gaps remain."
-                    : "The project has significant skill gaps for the current user profile.",
-        recommendations
-    };
-};
-
-/*
- * Technical feasibility.
- */
-const calculateTechnicalFeasibility = (
-    project,
-    requirements,
-    technologies
-) => {
-    let score = 80;
-
-    const risks = [];
-    const strengths = [];
-    const recommendations = [];
-
-    if (requirements.length <= 4) {
-        strengths.push(
-            "Project scope is relatively manageable."
-        );
-    } else {
-        score -= 10;
-
-        risks.push(
-            "The project contains many functional requirements."
-        );
-    }
-
-    if (technologies.length <= 4) {
-        strengths.push(
-            "Technology stack is reasonably focused."
-        );
-    } else {
-        score -= 8;
-
-        risks.push(
-            "The project may require managing many technologies."
-        );
-    }
-
-    if (
-        requirements.includes(
-            "AI / Machine Learning"
-        )
-    ) {
-        score -= 5;
-
-        risks.push(
-            "AI/ML introduces additional implementation complexity."
-        );
-
-        recommendations.push(
-            "Start with a simple AI workflow before advanced AI features."
-        );
-    }
-
-    if (
-        requirements.includes(
-            "Real-time Communication"
-        )
-    ) {
-        score -= 5;
-
-        risks.push(
-            "Real-time functionality requires additional backend complexity."
-        );
-    }
-
-    if (
-        requirements.includes(
-            "Payment Integration"
-        )
-    ) {
-        score -= 4;
-
-        risks.push(
-            "Payment functionality introduces security and testing requirements."
-        );
-    }
-
-    if (
-        requirements.includes(
-            "Database Management"
-        )
-    ) {
-        strengths.push(
-            "A database-backed architecture is clearly identified."
-        );
-    }
-
-    if (
-        requirements.includes(
-            "User Authentication"
-        )
-    ) {
-        strengths.push(
-            "Authentication can be isolated into protected APIs."
-        );
-    }
-
-    if (project.difficulty === "Advanced") {
-        score -= 8;
-    }
-
-    if (score < 60) {
-        recommendations.push(
-            "Reduce technical scope and build an MVP first."
-        );
-    }
-
-    score = Math.max(
+    return Math.max(
         0,
-        Math.min(100, score)
+        Math.min(100, Math.round(number))
     );
-
-    return {
-        score,
-        analysis:
-            score >= 80
-                ? "The project's technical architecture appears manageable for the stated scope."
-                : score >= 60
-                    ? "The architecture is possible, but some technical risks should be controlled."
-                    : "The current technical scope is challenging and should be reduced for the MVP.",
-        strengths,
-        risks,
-        recommendations
-    };
 };
 
-/*
- * Time feasibility.
- */
-const calculateTimeFeasibility = (
-    estimatedDays,
-    availableDays,
-    teamSize
-) => {
-    const safeAvailableDays =
-        Number(availableDays) || 0;
-
-    const safeTeamSize =
-        Math.max(
-            1,
-            Number(teamSize) || 1
-        );
-
-    const totalEffort =
-        Math.max(
-            1,
-            Number(estimatedDays) || 1
-        );
-
-    const effectiveCapacity =
-        safeAvailableDays * safeTeamSize;
-
-    let score = 50;
-
-    if (
-        effectiveCapacity >=
-        totalEffort * 1.5
-    ) {
-        score = 95;
-    } else if (
-        effectiveCapacity >=
-        totalEffort * 1.2
-    ) {
-        score = 85;
-    } else if (
-        effectiveCapacity >=
-        totalEffort
-    ) {
-        score = 75;
-    } else if (
-        effectiveCapacity >=
-        totalEffort * 0.75
-    ) {
-        score = 55;
-    } else {
-        score = 35;
-    }
-
-    const risks = [];
-    const recommendations = [];
-
-    if (safeAvailableDays <= 0) {
-        risks.push(
-            "Available development time has not been provided."
-        );
-
-        recommendations.push(
-            "Enter the number of available development days."
-        );
-    }
-
-    if (
-        effectiveCapacity <
-        totalEffort
-    ) {
-        risks.push(
-            "Available team capacity may not cover the estimated development effort."
-        );
-
-        recommendations.push(
-            "Reduce project scope or increase development capacity."
-        );
-    } else {
-        recommendations.push(
-            "Maintain milestones and prioritize MVP functionality."
-        );
-    }
-
-    return {
-        score,
-        estimatedEffort:
-            `${totalEffort} development days estimated for the current scope.`,
-        analysis:
-            effectiveCapacity >= totalEffort
-                ? "The available team capacity appears sufficient for the estimated effort."
-                : "The current project scope appears too large for the available capacity.",
-        risks,
-        recommendations
-    };
-};
-
-/*
- * Financial feasibility.
- */
-const calculateFinancialFeasibility = (
-    estimatedBudget,
-    availableBudget
-) => {
-    const cost =
-        Number(estimatedBudget) || 0;
-
-    const budget =
-        Number(availableBudget) || 0;
-
-    let score = 60;
-
-    const risks = [];
-    const recommendations = [];
-
-    if (budget <= 0) {
-        score = 50;
-
-        risks.push(
-            "Available budget has not been provided."
-        );
-
-        recommendations.push(
-            "Define an approximate project budget."
-        );
-    } else if (budget >= cost * 1.5) {
-        score = 95;
-    } else if (budget >= cost * 1.2) {
-        score = 88;
-    } else if (budget >= cost) {
-        score = 75;
-    } else if (budget >= cost * 0.75) {
-        score = 55;
-
-        risks.push(
-            "Available budget may be insufficient for the estimated project scope."
-        );
-
-        recommendations.push(
-            "Reduce paid services or defer non-essential features."
-        );
-    } else {
-        score = 35;
-
-        risks.push(
-            "Available budget is significantly below the estimated requirement."
-        );
-
-        recommendations.push(
-            "Reduce scope or identify lower-cost infrastructure."
-        );
-    }
-
-    const low =
-        Math.round(cost * 0.8);
-
-    const high =
-        Math.round(cost * 1.2);
-
-    return {
-        score,
-        estimatedCostRange:
-            `Approximately ₹${low.toLocaleString(
-                "en-IN"
-            )} - ₹${high.toLocaleString(
-                "en-IN"
-            )}`,
-        analysis:
-            budget > 0 && budget >= cost
-                ? "The available budget is broadly aligned with the estimated project cost."
-                : "The project may require budget adjustments before development.",
-        risks,
-        recommendations
-    };
-};
-
-/*
- * Data feasibility.
- */
-const calculateDataFeasibility = (
-    requirements,
-    description
-) => {
-    const text = normalize(description);
-
-    const requiredData = [];
-    const risks = [];
-    const recommendations = [];
-
-    let score = 80;
-
-    if (
-        requirements.includes(
-            "AI / Machine Learning"
-        ) ||
-        text.includes("dataset") ||
-        text.includes("training data")
-    ) {
-        requiredData.push(
-            "Training or evaluation data"
-        );
-
-        score -= 10;
-
-        risks.push(
-            "AI features may depend on data availability and quality."
-        );
-
-        recommendations.push(
-            "Validate data availability and quality early."
-        );
-    }
-
-    if (
-        requirements.includes(
-            "User Authentication"
-        )
-    ) {
-        requiredData.push(
-            "User account data"
-        );
-    }
-
-    if (
-        requirements.includes(
-            "Database Management"
-        )
-    ) {
-        requiredData.push(
-            "Structured application records"
-        );
-    }
-
-    if (
-        requiredData.length === 0
-    ) {
-        requiredData.push(
-            "Basic application data"
-        );
-    }
-
-    if (
-        text.includes("health") ||
-        text.includes("medical") ||
-        text.includes("financial")
-    ) {
-        score -= 10;
-
-        risks.push(
-            "Sensitive data may require stronger privacy controls."
-        );
-
-        recommendations.push(
-            "Minimize sensitive data collection and protect stored records."
-        );
-    }
-
-    return {
-        score: Math.max(
-            0,
-            Math.min(100, score)
-        ),
-        analysis:
-            score >= 80
-                ? "The project appears to have manageable data requirements."
-                : "Data availability, quality, or privacy should be reviewed before development.",
-        requiredData:
-            unique(requiredData),
-        risks,
-        recommendations
-    };
-};
-
-/*
- * Resource feasibility.
- */
-const calculateResourceFeasibility = (
-    requirements,
-    technologies,
-    difficulty
-) => {
-    const resources = [
-        "Development computer",
-        "Source control",
-        "Development environment"
-    ];
-
-    const risks = [];
-    const recommendations = [];
-
-    let score = 85;
-
-    if (technologies.length > 0) {
-        resources.push(
-            `Technology stack: ${technologies.join(", ")}`
-        );
-    }
-
-    if (
-        requirements.includes(
-            "AI / Machine Learning"
-        )
-    ) {
-        resources.push(
-            "AI/ML development environment"
-        );
-
-        score -= 5;
-    }
-
-    if (difficulty === "Advanced") {
-        score -= 5;
-
-        risks.push(
-            "Advanced projects may require stronger hardware or cloud infrastructure."
-        );
-    }
-
-    if (
-        requirements.includes(
-            "Real-time Communication"
-        )
-    ) {
-        resources.push(
-            "Real-time server infrastructure"
-        );
-    }
-
-    if (
-        requirements.includes(
-            "Payment Integration"
-        )
-    ) {
-        resources.push(
-            "Payment provider test environment"
-        );
-    }
-
-    recommendations.push(
-        "Start development locally and add cloud infrastructure when needed."
-    );
-
-    return {
-        score: Math.max(
-            0,
-            Math.min(100, score)
-        ),
-        analysis:
-            score >= 80
-                ? "The required development resources appear manageable."
-                : "Additional infrastructure or development resources may be needed.",
-        requiredResources:
-            unique(resources),
-        risks,
-        recommendations
-    };
-};
-
-/*
- * Team feasibility.
- */
-const calculateTeamFeasibility = (
-    requiredSkills,
-    userSkills,
-    currentTeamSize,
-    recommendedTeamSize
-) => {
-    const skillResult =
-        calculateSkillFeasibility(
-            userSkills,
-            requiredSkills
-        );
-
-    const teamSize =
-        Math.max(
-            1,
-            Number(currentTeamSize) || 1
-        );
-
-    const recommendedSize =
-        Math.max(
-            1,
-            Number(recommendedTeamSize) || 1
-        );
-
-    let score =
-        skillResult.score;
-
-    const teamStrengths = [];
-    const teamGaps = [];
-    const recommendations = [];
-
-    if (teamSize >= recommendedSize) {
-        score =
-            Math.min(
-                100,
-                Math.round(
-                    score * 0.7 + 30
-                )
-            );
-
-        teamStrengths.push(
-            "Current team size is sufficient for the recommended scope."
-        );
-    } else {
-        score =
-            Math.round(
-                score * 0.8
-            );
-
-        teamGaps.push(
-            `Recommended team size is approximately ${recommendedSize}, while the current team size is ${teamSize}.`
-        );
-
-        recommendations.push(
-            "Add teammates or reduce project scope."
-        );
-    }
-
-    if (
-        skillResult.skillGaps.length > 0
-    ) {
-        teamGaps.push(
-            `Skill gaps: ${skillResult.skillGaps.join(", ")}`
-        );
-    }
-
-    if (
-        recommendations.length === 0
-    ) {
-        recommendations.push(
-            "Distribute work across frontend, backend, AI/data, testing, and deployment."
-        );
-    }
-
-    return {
-        score,
-        analysis:
-            score >= 80
-                ? "The current team appears reasonably aligned with the project's size and skill requirements."
-                : "The team may need additional skills or a smaller project scope.",
-        teamStrengths,
-        teamGaps,
-        recommendations
-    };
-};
-
-/*
- * Scalability feasibility.
- */
-const calculateScalabilityFeasibility = (
-    requirements,
-    description
-) => {
-    const text =
-        normalize(description);
-
-    let score = 80;
-
-    const risks = [];
-    const recommendations = [];
-
-    if (
-        text.includes("large number of users") ||
-        text.includes("million users") ||
-        text.includes("large scale")
-    ) {
-        score -= 15;
-
-        risks.push(
-            "Large expected user volume may require scalable infrastructure."
-        );
-
-        recommendations.push(
-            "Design APIs and database access with future scaling in mind."
-        );
-    }
-
-    if (
-        requirements.includes(
-            "Real-time Communication"
-        )
-    ) {
-        score -= 5;
-
-        risks.push(
-            "Real-time communication can increase server load."
-        );
-    }
-
-    if (
-        requirements.includes(
-            "AI / Machine Learning"
-        )
-    ) {
-        score -= 5;
-
-        risks.push(
-            "AI workloads may require additional compute capacity at scale."
-        );
-    }
-
-    if (
-        requirements.includes(
-            "Database Management"
-        )
-    ) {
-        recommendations.push(
-            "Use indexed queries and clear data models for future growth."
-        );
-    }
-
-    recommendations.push(
-        "Keep frontend, backend, and data layers loosely coupled."
-    );
-
-    return {
-        score: Math.max(
-            0,
-            Math.min(100, score)
-        ),
-        analysis:
-            score >= 80
-                ? "The current architecture can support moderate future expansion."
-                : "The project may require additional scalability planning.",
-        risks,
-        recommendations:
-            unique(recommendations)
-    };
-};
-
-/*
- * Commercial feasibility.
- */
-const calculateCommercialFeasibility = (
-    project,
-    description
-) => {
-    const text =
-        normalize(description);
-
-    let score = 60;
-
-    const commercialOpportunities = [];
-    const risks = [];
-    const recommendations = [];
-
-    if (
-        text.includes("student") ||
-        text.includes("college") ||
-        text.includes("business") ||
-        text.includes("customer")
-    ) {
-        score += 10;
-    }
-
-    if (
-        text.includes("payment") ||
-        text.includes("subscription") ||
-        text.includes("marketplace")
-    ) {
-        score += 15;
-
-        commercialOpportunities.push(
-            "Potential paid or transaction-based model."
-        );
-    }
-
-    commercialOpportunities.push(
-        "Potential to expand functionality based on real user feedback."
-    );
-
-    risks.push(
-        "Commercial success depends on real user adoption and differentiation."
-    );
-
-    recommendations.push(
-        "Validate the target user problem with real users before investing heavily."
-    );
-
-    return {
-        score: Math.max(
-            0,
-            Math.min(100, score)
-        ),
-        analysis:
-            "Commercial feasibility should be validated through real user research.",
-        commercialOpportunities,
-        risks,
-        recommendations
-    };
-};
-
-/*
- * Classification.
- */
-const getClassification = (score) => {
+const classificationFromScore = (score) => {
     if (score >= 90) {
         return "Highly Feasible";
     }
@@ -966,185 +71,602 @@ const getClassification = (score) => {
     return "Not Feasible";
 };
 
-/*
- * Final recommendation.
- */
-const getRecommendation = (
-    score,
-    skillGaps,
-    majorRisks
-) => {
-    if (
-        score >= 75 &&
-        skillGaps.length === 0
-    ) {
-        return "Proceed";
-    }
-
-    if (score >= 60) {
-        return "Proceed with Modifications";
-    }
-
-    if (
-        majorRisks.length > 0 ||
-        skillGaps.length > 0
-    ) {
-        return "Reduce Project Scope";
-    }
-
-    return "Not Recommended";
+const normalizeProjectRequirements = (project) => {
+    return cleanArray([
+        ...(project.skillsRequired || []),
+        ...(project.keyFeatures || [])
+    ]);
 };
 
-/*
- * Weighted overall score.
- */
-const calculateOverallScore = ({
-    technical,
-    skill,
-    time,
-    financial,
-    data,
-    resource,
-    team,
-    scalability,
-    commercial
-}) => {
-    const score = Math.round(
-        technical * 0.15 +
-        skill * 0.15 +
-        time * 0.15 +
-        financial * 0.12 +
-        data * 0.08 +
-        resource * 0.08 +
-        team * 0.12 +
-        scalability * 0.08 +
-        commercial * 0.07
-    );
-
-    return Math.max(
-        0,
-        Math.min(100, score)
-    );
-};
-
-/*
- * MVP recommendation.
- */
-const buildMvpRecommendation = (
-    requirements,
-    score
-) => {
-    const allFeatures = [];
-
-    if (
-        requirements.includes(
-            "User Authentication"
-        )
-    ) {
-        allFeatures.push(
-            "User registration and login"
-        );
-    }
-
-    if (
-        requirements.includes(
-            "Database Management"
-        )
-    ) {
-        allFeatures.push(
-            "Core database functionality"
-        );
-    }
-
-    if (
-        requirements.includes(
-            "AI / Machine Learning"
-        )
-    ) {
-        allFeatures.push(
-            "Basic AI functionality"
-        );
-    }
-
-    if (
-        requirements.includes(
-            "Dashboard / Analytics"
-        )
-    ) {
-        allFeatures.push(
-            "Basic dashboard"
-        );
-    }
-
-    if (
-        allFeatures.length === 0
-    ) {
-        allFeatures.push(
-            "Core project workflow",
-            "Basic user interface",
-            "Essential data management"
-        );
-    }
-
-    const futureFeatures = [
-        "Advanced analytics",
-        "Scalability improvements"
-    ];
-
-    if (
-        requirements.includes(
-            "AI / Machine Learning"
-        )
-    ) {
-        futureFeatures.push(
-            "Advanced AI capabilities"
-        );
-    }
-
-    if (
-        requirements.includes(
-            "Payment Integration"
-        )
-    ) {
-        futureFeatures.push(
-            "Advanced payment features"
-        );
-    }
-
-    if (
-        requirements.includes(
-            "Real-time Communication"
-        )
-    ) {
-        futureFeatures.push(
-            "Advanced communication tools"
-        );
-    }
-
+const buildProjectContext = (project) => {
     return {
-        mvpFeatures:
-            score < 75
-                ? allFeatures.slice(0, 3)
-                : allFeatures,
+        title: project.title || "",
+        description: project.description || "",
+        domain: project.domain || "",
+        projectType: project.projectType || "",
+        problemStatement:
+            project.problemStatement || "",
+        objectives: cleanArray(project.objectives),
+        keyFeatures: cleanArray(project.keyFeatures),
+        category: project.category || "General",
+        skillsRequired: cleanArray(
+            project.skillsRequired
+        ),
+        recommendedTechnologies: cleanArray(
+            project.recommendedTechnologies
+        ),
+        estimatedDays:
+            Number(project.estimatedDays) || 0,
+        estimatedBudget:
+            Number(project.estimatedBudget) || 0,
+        recommendedTeamSize:
+            Number(project.recommendedTeamSize) || 1,
+        difficulty:
+            project.difficulty || "Beginner",
+        status:
+            project.status || "Open"
+    };
+};
 
-        futureFeatures
+const buildUserContext = (user) => {
+    return {
+        name: user.name || "",
+        experienceLevel:
+            user.experienceLevel || "Beginner",
+        college:
+            user.college || "",
+        bio:
+            user.bio || "",
+        skills: cleanArray(user.skills),
+        interests: cleanArray(user.interests),
+        preferredTechnologies:
+            cleanArray(
+                user.preferredTechnologies
+            ),
+        previousProjects:
+            Array.isArray(user.previousProjects)
+                ? user.previousProjects.map(
+                    (project) => ({
+                        title:
+                            project.title || "",
+                        description:
+                            project.description || "",
+                        technologies:
+                            cleanArray(
+                                project.technologies
+                            ),
+                        role:
+                            project.role || ""
+                    })
+                )
+                : [],
+        currentTeamSize:
+            Number(
+                user.currentTeamSize
+            ) || 1,
+        availableDevelopmentDays:
+            Number(
+                user.availableDevelopmentDays
+            ) || 0,
+        availableBudget:
+            Number(user.availableBudget) || 0,
+        availability:
+            user.availability || "Available"
     };
 };
 
 /*
- * Main feasibility analysis.
- */
+|--------------------------------------------------------------------------
+| Structured Gemini schema
+|--------------------------------------------------------------------------
+*/
+
+const feasibilitySchema = {
+    type: "object",
+
+    properties: {
+        overallFeasibility: {
+            type: "object",
+            properties: {
+                score: {
+                    type: "integer"
+                },
+
+                classification: {
+                    type: "string"
+                },
+
+                recommendation: {
+                    type: "string"
+                },
+
+                reason: {
+                    type: "string"
+                }
+            },
+
+            required: [
+                "score",
+                "classification",
+                "recommendation",
+                "reason"
+            ]
+        },
+
+        technicalFeasibility: {
+            type: "object",
+            properties: {
+                score: {
+                    type: "integer"
+                },
+
+                analysis: {
+                    type: "string"
+                },
+
+                strengths: {
+                    type: "array",
+                    items: {
+                        type: "string"
+                    }
+                },
+
+                risks: {
+                    type: "array",
+                    items: {
+                        type: "string"
+                    }
+                },
+
+                recommendations: {
+                    type: "array",
+                    items: {
+                        type: "string"
+                    }
+                }
+            },
+
+            required: [
+                "score",
+                "analysis",
+                "strengths",
+                "risks",
+                "recommendations"
+            ]
+        },
+
+        skillFeasibility: {
+            type: "object",
+            properties: {
+                score: {
+                    type: "integer"
+                },
+
+                analysis: {
+                    type: "string"
+                },
+
+                skillMatches: {
+                    type: "array",
+                    items: {
+                        type: "string"
+                    }
+                },
+
+                skillGaps: {
+                    type: "array",
+                    items: {
+                        type: "string"
+                    }
+                },
+
+                recommendations: {
+                    type: "array",
+                    items: {
+                        type: "string"
+                    }
+                }
+            },
+
+            required: [
+                "score",
+                "analysis",
+                "skillMatches",
+                "skillGaps",
+                "recommendations"
+            ]
+        },
+
+        timeFeasibility: {
+            type: "object",
+            properties: {
+                score: {
+                    type: "integer"
+                },
+
+                analysis: {
+                    type: "string"
+                },
+
+                estimatedEffort: {
+                    type: "string"
+                },
+
+                risks: {
+                    type: "array",
+                    items: {
+                        type: "string"
+                    }
+                },
+
+                recommendations: {
+                    type: "array",
+                    items: {
+                        type: "string"
+                    }
+                }
+            },
+
+            required: [
+                "score",
+                "analysis",
+                "estimatedEffort",
+                "risks",
+                "recommendations"
+            ]
+        },
+
+        financialFeasibility: {
+            type: "object",
+            properties: {
+                score: {
+                    type: "integer"
+                },
+
+                analysis: {
+                    type: "string"
+                },
+
+                estimatedCostRange: {
+                    type: "string"
+                },
+
+                risks: {
+                    type: "array",
+                    items: {
+                        type: "string"
+                    }
+                },
+
+                recommendations: {
+                    type: "array",
+                    items: {
+                        type: "string"
+                    }
+                }
+            },
+
+            required: [
+                "score",
+                "analysis",
+                "estimatedCostRange",
+                "risks",
+                "recommendations"
+            ]
+        },
+
+        dataFeasibility: {
+            type: "object",
+            properties: {
+                score: {
+                    type: "integer"
+                },
+
+                analysis: {
+                    type: "string"
+                },
+
+                requiredData: {
+                    type: "array",
+                    items: {
+                        type: "string"
+                    }
+                },
+
+                risks: {
+                    type: "array",
+                    items: {
+                        type: "string"
+                    }
+                },
+
+                recommendations: {
+                    type: "array",
+                    items: {
+                        type: "string"
+                    }
+                }
+            },
+
+            required: [
+                "score",
+                "analysis",
+                "requiredData",
+                "risks",
+                "recommendations"
+            ]
+        },
+
+        resourceFeasibility: {
+            type: "object",
+            properties: {
+                score: {
+                    type: "integer"
+                },
+
+                analysis: {
+                    type: "string"
+                },
+
+                requiredResources: {
+                    type: "array",
+                    items: {
+                        type: "string"
+                    }
+                },
+
+                risks: {
+                    type: "array",
+                    items: {
+                        type: "string"
+                    }
+                },
+
+                recommendations: {
+                    type: "array",
+                    items: {
+                        type: "string"
+                    }
+                }
+            },
+
+            required: [
+                "score",
+                "analysis",
+                "requiredResources",
+                "risks",
+                "recommendations"
+            ]
+        },
+
+        teamFeasibility: {
+            type: "object",
+            properties: {
+                score: {
+                    type: "integer"
+                },
+
+                analysis: {
+                    type: "string"
+                },
+
+                teamStrengths: {
+                    type: "array",
+                    items: {
+                        type: "string"
+                    }
+                },
+
+                teamGaps: {
+                    type: "array",
+                    items: {
+                        type: "string"
+                    }
+                },
+
+                recommendations: {
+                    type: "array",
+                    items: {
+                        type: "string"
+                    }
+                }
+            },
+
+            required: [
+                "score",
+                "analysis",
+                "teamStrengths",
+                "teamGaps",
+                "recommendations"
+            ]
+        },
+
+        scalabilityFeasibility: {
+            type: "object",
+            properties: {
+                score: {
+                    type: "integer"
+                },
+
+                analysis: {
+                    type: "string"
+                },
+
+                risks: {
+                    type: "array",
+                    items: {
+                        type: "string"
+                    }
+                },
+
+                recommendations: {
+                    type: "array",
+                    items: {
+                        type: "string"
+                    }
+                }
+            },
+
+            required: [
+                "score",
+                "analysis",
+                "risks",
+                "recommendations"
+            ]
+        },
+
+        commercialFeasibility: {
+            type: "object",
+            properties: {
+                score: {
+                    type: "integer"
+                },
+
+                analysis: {
+                    type: "string"
+                },
+
+                commercialOpportunities: {
+                    type: "array",
+                    items: {
+                        type: "string"
+                    }
+                },
+
+                risks: {
+                    type: "array",
+                    items: {
+                        type: "string"
+                    }
+                },
+
+                recommendations: {
+                    type: "array",
+                    items: {
+                        type: "string"
+                    }
+                }
+            },
+
+            required: [
+                "score",
+                "analysis",
+                "commercialOpportunities",
+                "risks",
+                "recommendations"
+            ]
+        },
+
+        skillGaps: {
+            type: "array",
+            items: {
+                type: "string"
+            }
+        },
+
+        majorRisks: {
+            type: "array",
+            items: {
+                type: "object",
+                properties: {
+                    risk: {
+                        type: "string"
+                    },
+
+                    severity: {
+                        type: "string"
+                    },
+
+                    impact: {
+                        type: "string"
+                    },
+
+                    mitigation: {
+                        type: "string"
+                    }
+                },
+
+                required: [
+                    "risk",
+                    "severity",
+                    "impact",
+                    "mitigation"
+                ]
+            }
+        },
+
+        mvpRecommendation: {
+            type: "object",
+            properties: {
+                mvpFeatures: {
+                    type: "array",
+                    items: {
+                        type: "string"
+                    }
+                },
+
+                futureFeatures: {
+                    type: "array",
+                    items: {
+                        type: "string"
+                    }
+                }
+            },
+
+            required: [
+                "mvpFeatures",
+                "futureFeatures"
+            ]
+        },
+
+        personalizedRecommendations: {
+            type: "array",
+            items: {
+                type: "string"
+            }
+        }
+    },
+
+    required: [
+        "overallFeasibility",
+        "technicalFeasibility",
+        "skillFeasibility",
+        "timeFeasibility",
+        "financialFeasibility",
+        "dataFeasibility",
+        "resourceFeasibility",
+        "teamFeasibility",
+        "scalabilityFeasibility",
+        "commercialFeasibility",
+        "skillGaps",
+        "majorRisks",
+        "mvpRecommendation",
+        "personalizedRecommendations"
+    ]
+};
+
+/*
+|--------------------------------------------------------------------------
+| Main Gemini Feasibility Analysis
+|--------------------------------------------------------------------------
+*/
+
 const analyzeFeasibility = async (
     userId,
     projectId,
     userOverrides = {}
 ) => {
-    const project =
-        await Project.findById(projectId)
-            .populate(
-                "owner",
-                "name email college"
-            );
+    const project = await Project.findById(
+        projectId
+    )
+        .populate(
+            "owner",
+            "name email college"
+        )
+        .populate(
+            "members",
+            "name email college skills interests experienceLevel preferredTechnologies previousProjects"
+        );
 
     if (!project) {
         throw new Error(
@@ -1152,9 +674,9 @@ const analyzeFeasibility = async (
         );
     }
 
-    const user =
-        await User.findById(userId)
-            .select("-password");
+    const user = await User.findById(
+        userId
+    ).select("-password");
 
     if (!user) {
         throw new Error(
@@ -1162,344 +684,750 @@ const analyzeFeasibility = async (
         );
     }
 
-    const projectRequiredSkills = [
-        ...(project.skillsRequired || [])
-    ];
+    /*
+    |--------------------------------------------------------------------------
+    | Build context
+    |--------------------------------------------------------------------------
+    */
 
-    const descriptionRequirements =
-        extractRequirements(
-            project.description || ""
-        );
+    const projectContext =
+        buildProjectContext(project);
 
-    const requirements =
-        unique([
-            ...projectRequiredSkills,
-            ...descriptionRequirements
-        ]);
+    const userContext =
+        buildUserContext(user);
 
-    const technologies = [];
+    const teamMembers =
+        Array.isArray(project.members)
+            ? project.members.map(
+                (member) => ({
+                    name:
+                        member.name || "",
 
-    const skillResult =
-        calculateSkillFeasibility(
-            user.skills || [],
-            projectRequiredSkills.length > 0
-                ? projectRequiredSkills
-                : requirements
-        );
+                    experienceLevel:
+                        member.experienceLevel ||
+                        "Beginner",
 
-    const technicalResult =
-        calculateTechnicalFeasibility(
-            project,
-            requirements,
-            technologies
-        );
+                    skills:
+                        cleanArray(
+                            member.skills
+                        ),
+
+                    interests:
+                        cleanArray(
+                            member.interests
+                        ),
+
+                    preferredTechnologies:
+                        cleanArray(
+                            member.preferredTechnologies
+                        )
+                })
+            )
+            : [];
 
     const availableDays =
-        userOverrides.availableDays ??
-        user.availableDevelopmentDays ??
-        0;
+        Number(
+            userOverrides.availableDays ??
+            user.availableDevelopmentDays ??
+            0
+        );
 
     const availableBudget =
-        userOverrides.availableBudget ??
-        user.availableBudget ??
-        0;
+        Number(
+            userOverrides.availableBudget ??
+            user.availableBudget ??
+            0
+        );
 
     const currentTeamSize =
-        userOverrides.currentTeamSize ??
-        (
-            Array.isArray(project.members)
-                ? project.members.length
-                : 1
+        Number(
+            userOverrides.currentTeamSize ??
+            user.currentTeamSize ??
+            Math.max(
+                1,
+                teamMembers.length
+            )
         );
 
-    const recommendedTeamSize =
-        project.recommendedTeamSize ||
-        (
-            project.difficulty === "Advanced"
-                ? 4
-                : project.difficulty === "Intermediate"
-                    ? 3
-                    : 2
-        );
+    /*
+    |--------------------------------------------------------------------------
+    | Gemini prompt
+    |--------------------------------------------------------------------------
+    */
 
-    const estimatedDays =
-        project.estimatedDuration ||
-        project.estimatedDays ||
-        30;
+    const prompt = `
+You are MENTORX, an expert software project feasibility advisor.
 
-    const estimatedBudget =
-        project.estimatedBudget ||
-        0;
+Your job is to determine whether THIS USER or TEAM can realistically
+build THIS PROJECT.
 
-    const timeResult =
-        calculateTimeFeasibility(
-            estimatedDays,
-            availableDays,
-            currentTeamSize
-        );
+Do NOT just analyze the project in isolation.
 
-    const financialResult =
-        calculateFinancialFeasibility(
-            estimatedBudget,
-            availableBudget
-        );
+You must compare:
 
-    const dataResult =
-        calculateDataFeasibility(
-            requirements,
-            project.description || ""
-        );
+USER CAPABILITIES
+against
+PROJECT REQUIREMENTS
 
-    const resourceResult =
-        calculateResourceFeasibility(
-            requirements,
-            technologies,
-            project.difficulty
-        );
+Consider:
 
-    const teamResult =
-        calculateTeamFeasibility(
-            projectRequiredSkills,
-            user.skills || [],
-            currentTeamSize,
-            recommendedTeamSize
-        );
+- Technical skills
+- Experience level
+- Preferred technologies
+- Previous project experience
+- Team size
+- Team skill coverage
+- Available development time
+- Available budget
+- Project complexity
+- Technology requirements
+- Data requirements
+- Infrastructure/resources
+- Scalability
+- Commercial/industry potential
 
-    const scalabilityResult =
-        calculateScalabilityFeasibility(
-            requirements,
-            project.description || ""
-        );
+==================================================
+USER PROFILE
+==================================================
 
-    const commercialResult =
-        calculateCommercialFeasibility(
-            project,
-            project.description || ""
-        );
+${JSON.stringify(
+    userContext,
+    null,
+    2
+)}
 
-    const overallScore =
-        calculateOverallScore({
-            technical:
-                technicalResult.score,
+==================================================
+PROJECT
+==================================================
 
-            skill:
-                skillResult.score,
+${JSON.stringify(
+    projectContext,
+    null,
+    2
+)}
 
-            time:
-                timeResult.score,
+==================================================
+CURRENT TEAM
+==================================================
 
-            financial:
-                financialResult.score,
+${JSON.stringify(
+    teamMembers,
+    null,
+    2
+)}
 
-            data:
-                dataResult.score,
+==================================================
+CURRENT RESOURCE INPUT
+==================================================
 
-            resource:
-                resourceResult.score,
+Available development days:
+${availableDays}
 
-            team:
-                teamResult.score,
+Available budget:
+₹${availableBudget}
 
-            scalability:
-                scalabilityResult.score,
+Current team size:
+${currentTeamSize}
 
-            commercial:
-                commercialResult.score
+==================================================
+IMPORTANT
+==================================================
+
+Generate a realistic personalized feasibility assessment.
+
+Do NOT give the same score to every project.
+
+Do NOT give the same score to every user.
+
+A user with strong matching skills and previous experience should
+generally score higher than a beginner with no relevant experience.
+
+A project with many features should generally be more difficult
+than a simple project.
+
+Consider the actual project description, objectives, features,
+skills, technologies and constraints.
+
+TIMELINE:
+Estimate realistic development effort for the stated scope.
+
+BUDGET:
+Estimate approximate project cost in Indian Rupees.
+This is an estimate, NOT a guaranteed quotation.
+
+SKILLS:
+Explicitly identify matching skills and missing skills.
+
+TEAM:
+Consider whether the current team size and skill mix are adequate.
+
+MVP:
+Suggest the smallest useful version that could reasonably be completed.
+
+RISKS:
+Identify practical risks and explain mitigation.
+
+FINAL RECOMMENDATION:
+Use one of:
+
+- Proceed
+- Proceed with Modifications
+- Reduce Project Scope
+- Not Recommended
+
+OVERALL CLASSIFICATION:
+Use:
+
+90-100 = Highly Feasible
+75-89 = Feasible
+60-74 = Moderately Feasible
+40-59 = Difficult
+0-39 = Not Feasible
+
+Return ONLY valid JSON matching the required schema.
+`;
+
+    /*
+    |--------------------------------------------------------------------------
+    | Call Gemini
+    |--------------------------------------------------------------------------
+    */
+
+    const response =
+        await ai.models.generateContent({
+            model: MODEL_NAME,
+
+            contents: prompt,
+
+            config: {
+                responseMimeType:
+                    "application/json",
+
+                responseSchema:
+                    feasibilitySchema,
+
+                temperature: 0.2
+            }
         });
 
-    const classification =
-        getClassification(
-            overallScore
+    const text =
+        typeof response.text === "function"
+            ? response.text()
+            : response.text;
+
+    if (!text) {
+        throw new Error(
+            "Gemini returned an empty feasibility response"
+        );
+    }
+
+    let result;
+
+    try {
+        result = JSON.parse(text);
+    } catch (error) {
+        console.error(
+            "Gemini feasibility JSON:",
+            text
         );
 
-    const majorRisks = [
-        ...technicalResult.risks.map(
-            (risk) => ({
-                risk,
-                severity: "Medium",
-                impact:
-                    "May increase project effort or implementation difficulty.",
-                mitigation:
-                    "Reduce scope, improve planning, or add required expertise."
-            })
-        ),
+        throw new Error(
+            "Gemini returned invalid feasibility JSON"
+        );
+    }
 
-        ...timeResult.risks.map(
-            (risk) => ({
-                risk,
-                severity: "High",
-                impact:
-                    "The team may not complete the project within the available time.",
-                mitigation:
-                    "Reduce scope or increase development capacity."
-            })
-        ),
+    /*
+    |--------------------------------------------------------------------------
+    | Normalize Gemini result
+    |--------------------------------------------------------------------------
+    */
 
-        ...financialResult.risks.map(
-            (risk) => ({
-                risk,
-                severity: "Medium",
-                impact:
-                    "Project expenses may exceed available resources.",
-                mitigation:
-                    "Reduce paid dependencies and prioritize the MVP."
-            })
-        ),
+    const overallScore =
+        clampScore(
+            result
+                ?.overallFeasibility
+                ?.score
+        );
 
-        ...dataResult.risks.map(
-            (risk) => ({
-                risk,
-                severity: "Medium",
-                impact:
-                    "Data limitations may affect implementation quality.",
-                mitigation:
-                    "Validate data sources and privacy requirements early."
-            })
-        ),
+    const skillScore =
+        clampScore(
+            result
+                ?.skillFeasibility
+                ?.score
+        );
 
-        ...teamResult.teamGaps.map(
-            (gap) => ({
-                risk: gap,
-                severity: "High",
-                impact:
-                    "Missing skills or insufficient team capacity may delay development.",
-                mitigation:
-                    "Add complementary teammates or reduce scope."
-            })
-        )
-    ];
+    const technicalScore =
+        clampScore(
+            result
+                ?.technicalFeasibility
+                ?.score
+        );
+
+    const timeScore =
+        clampScore(
+            result
+                ?.timeFeasibility
+                ?.score
+        );
+
+    const financialScore =
+        clampScore(
+            result
+                ?.financialFeasibility
+                ?.score
+        );
+
+    const dataScore =
+        clampScore(
+            result
+                ?.dataFeasibility
+                ?.score
+        );
+
+    const resourceScore =
+        clampScore(
+            result
+                ?.resourceFeasibility
+                ?.score
+        );
+
+    const teamScore =
+        clampScore(
+            result
+                ?.teamFeasibility
+                ?.score
+        );
+
+    const scalabilityScore =
+        clampScore(
+            result
+                ?.scalabilityFeasibility
+                ?.score
+        );
+
+    const commercialScore =
+        clampScore(
+            result
+                ?.commercialFeasibility
+                ?.score
+        );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Keep score internally consistent
+    |--------------------------------------------------------------------------
+    */
+
+    const calculatedOverallScore =
+        Math.round(
+            technicalScore * 0.15 +
+            skillScore * 0.15 +
+            timeScore * 0.15 +
+            financialScore * 0.12 +
+            dataScore * 0.08 +
+            resourceScore * 0.08 +
+            teamScore * 0.12 +
+            scalabilityScore * 0.08 +
+            commercialScore * 0.07
+        );
+
+    const finalScore =
+        overallScore > 0
+            ? overallScore
+            : calculatedOverallScore;
+
+    const skillGaps =
+        cleanArray(
+            result.skillGaps
+        );
+
+    const finalClassification =
+        classificationFromScore(
+            finalScore
+        );
+
+    const recommendation =
+        result
+            ?.overallFeasibility
+            ?.recommendation ||
+        "Proceed with Modifications";
 
     const finalRecommendation =
-        getRecommendation(
-            overallScore,
-            skillResult.skillGaps,
-            majorRisks
-        );
+        [
+            "Proceed",
+            "Proceed with Modifications",
+            "Reduce Project Scope",
+            "Not Recommended"
+        ].includes(
+            recommendation
+        )
+            ? recommendation
+            : "Proceed with Modifications";
 
-    const mvpRecommendation =
-        buildMvpRecommendation(
-            requirements,
-            overallScore
-        );
+    /*
+    |--------------------------------------------------------------------------
+    | Personalized result
+    |--------------------------------------------------------------------------
+    */
 
-    const personalizedRecommendations = [];
-
-    if (
-        skillResult.skillGaps.length > 0
-    ) {
-        personalizedRecommendations.push(
-            `Your current profile is missing: ${skillResult.skillGaps.join(", ")}.`
+    const personalizedRecommendations =
+        cleanArray(
+            result.personalizedRecommendations
         );
-    }
-
-    if (
-        availableDays > 0 &&
-        timeResult.score < 75
-    ) {
-        personalizedRecommendations.push(
-            "Your available development time is tight for the current scope."
-        );
-    }
-
-    if (
-        availableBudget > 0 &&
-        financialResult.score < 75
-    ) {
-        personalizedRecommendations.push(
-            "Your available budget is below the estimated project requirement."
-        );
-    }
-
-    if (
-        teamResult.score >= 75
-    ) {
-        personalizedRecommendations.push(
-            "Your current team structure is reasonably aligned with the project."
-        );
-    }
-
-    if (
-        personalizedRecommendations.length === 0
-    ) {
-        personalizedRecommendations.push(
-            "Your current profile appears reasonably aligned with the project's requirements."
-        );
-    }
 
     return {
-        projectTitle: project.title,
+        projectTitle:
+            project.title,
 
         overallFeasibility: {
-            score: overallScore,
-            classification,
+            score: finalScore,
+
+            classification:
+                finalClassification,
+
             recommendation:
                 finalRecommendation,
+
             reason:
-                overallScore >= 75
-                    ? "The project appears achievable with the current profile and reasonable planning."
-                    : "The current scope contains important gaps that should be addressed before full development."
+                result
+                    ?.overallFeasibility
+                    ?.reason ||
+                "Gemini analyzed the project against the current user profile."
         },
 
-        technicalFeasibility:
-            technicalResult,
+        technicalFeasibility: {
+            score:
+                technicalScore,
 
-        skillFeasibility:
-            skillResult,
+            analysis:
+                result
+                    ?.technicalFeasibility
+                    ?.analysis ||
+                "",
 
-        timeFeasibility:
-            timeResult,
+            strengths:
+                cleanArray(
+                    result
+                        ?.technicalFeasibility
+                        ?.strengths
+                ),
 
-        financialFeasibility:
-            financialResult,
+            risks:
+                cleanArray(
+                    result
+                        ?.technicalFeasibility
+                        ?.risks
+                ),
 
-        dataFeasibility:
-            dataResult,
+            recommendations:
+                cleanArray(
+                    result
+                        ?.technicalFeasibility
+                        ?.recommendations
+                )
+        },
 
-        resourceFeasibility:
-            resourceResult,
+        skillFeasibility: {
+            score:
+                skillScore,
 
-        teamFeasibility:
-            teamResult,
+            analysis:
+                result
+                    ?.skillFeasibility
+                    ?.analysis ||
+                "",
 
-        scalabilityFeasibility:
-            scalabilityResult,
+            skillMatches:
+                cleanArray(
+                    result
+                        ?.skillFeasibility
+                        ?.skillMatches
+                ),
 
-        commercialFeasibility:
-            commercialResult,
+            skillGaps,
 
-        skillGaps:
-            skillResult.skillGaps,
+            recommendations:
+                cleanArray(
+                    result
+                        ?.skillFeasibility
+                        ?.recommendations
+                )
+        },
 
-        majorRisks,
+        timeFeasibility: {
+            score:
+                timeScore,
 
-        mvpRecommendation,
+            analysis:
+                result
+                    ?.timeFeasibility
+                    ?.analysis ||
+                "",
+
+            estimatedEffort:
+                result
+                    ?.timeFeasibility
+                    ?.estimatedEffort ||
+                `${projectContext.estimatedDays || 0} development days estimated.`,
+
+            risks:
+                cleanArray(
+                    result
+                        ?.timeFeasibility
+                        ?.risks
+                ),
+
+            recommendations:
+                cleanArray(
+                    result
+                        ?.timeFeasibility
+                        ?.recommendations
+                )
+        },
+
+        financialFeasibility: {
+            score:
+                financialScore,
+
+            analysis:
+                result
+                    ?.financialFeasibility
+                    ?.analysis ||
+                "",
+
+            estimatedCostRange:
+                result
+                    ?.financialFeasibility
+                    ?.estimatedCostRange ||
+                `Approximately ₹${projectContext.estimatedBudget.toLocaleString(
+                    "en-IN"
+                )}`,
+
+            risks:
+                cleanArray(
+                    result
+                        ?.financialFeasibility
+                        ?.risks
+                ),
+
+            recommendations:
+                cleanArray(
+                    result
+                        ?.financialFeasibility
+                        ?.recommendations
+                )
+        },
+
+        dataFeasibility: {
+            score:
+                dataScore,
+
+            analysis:
+                result
+                    ?.dataFeasibility
+                    ?.analysis ||
+                "",
+
+            requiredData:
+                cleanArray(
+                    result
+                        ?.dataFeasibility
+                        ?.requiredData
+                ),
+
+            risks:
+                cleanArray(
+                    result
+                        ?.dataFeasibility
+                        ?.risks
+                ),
+
+            recommendations:
+                cleanArray(
+                    result
+                        ?.dataFeasibility
+                        ?.recommendations
+                )
+        },
+
+        resourceFeasibility: {
+            score:
+                resourceScore,
+
+            analysis:
+                result
+                    ?.resourceFeasibility
+                    ?.analysis ||
+                "",
+
+            requiredResources:
+                cleanArray(
+                    result
+                        ?.resourceFeasibility
+                        ?.requiredResources
+                ),
+
+            risks:
+                cleanArray(
+                    result
+                        ?.resourceFeasibility
+                        ?.risks
+                ),
+
+            recommendations:
+                cleanArray(
+                    result
+                        ?.resourceFeasibility
+                        ?.recommendations
+                )
+        },
+
+        teamFeasibility: {
+            score:
+                teamScore,
+
+            analysis:
+                result
+                    ?.teamFeasibility
+                    ?.analysis ||
+                "",
+
+            teamStrengths:
+                cleanArray(
+                    result
+                        ?.teamFeasibility
+                        ?.teamStrengths
+                ),
+
+            teamGaps:
+                cleanArray(
+                    result
+                        ?.teamFeasibility
+                        ?.teamGaps
+                ),
+
+            recommendations:
+                cleanArray(
+                    result
+                        ?.teamFeasibility
+                        ?.recommendations
+                )
+        },
+
+        scalabilityFeasibility: {
+            score:
+                scalabilityScore,
+
+            analysis:
+                result
+                    ?.scalabilityFeasibility
+                    ?.analysis ||
+                "",
+
+            risks:
+                cleanArray(
+                    result
+                        ?.scalabilityFeasibility
+                        ?.risks
+                ),
+
+            recommendations:
+                cleanArray(
+                    result
+                        ?.scalabilityFeasibility
+                        ?.recommendations
+                )
+        },
+
+        commercialFeasibility: {
+            score:
+                commercialScore,
+
+            analysis:
+                result
+                    ?.commercialFeasibility
+                    ?.analysis ||
+                "",
+
+            commercialOpportunities:
+                cleanArray(
+                    result
+                        ?.commercialFeasibility
+                        ?.commercialOpportunities
+                ),
+
+            risks:
+                cleanArray(
+                    result
+                        ?.commercialFeasibility
+                        ?.risks
+                ),
+
+            recommendations:
+                cleanArray(
+                    result
+                        ?.commercialFeasibility
+                        ?.recommendations
+                )
+        },
+
+        skillGaps,
+
+        majorRisks:
+            Array.isArray(
+                result.majorRisks
+            )
+                ? result.majorRisks.map(
+                    (risk) => ({
+                        risk:
+                            risk.risk ||
+                            "Unspecified risk",
+
+                        severity:
+                            risk.severity ||
+                            "Medium",
+
+                        impact:
+                            risk.impact ||
+                            "May affect project execution.",
+
+                        mitigation:
+                            risk.mitigation ||
+                            "Review the risk before implementation."
+                    })
+                )
+                : [],
+
+        mvpRecommendation: {
+            mvpFeatures:
+                cleanArray(
+                    result
+                        ?.mvpRecommendation
+                        ?.mvpFeatures
+                ),
+
+            futureFeatures:
+                cleanArray(
+                    result
+                        ?.mvpRecommendation
+                        ?.futureFeatures
+                )
+        },
 
         personalizedRecommendations,
 
         context: {
-            user: {
-                id: user._id,
-                name: user.name,
-                experienceLevel:
-                    user.experienceLevel,
-                skills:
-                    user.skills || [],
-                interests:
-                    user.interests || []
-            },
+            user: userContext,
 
-            project: {
-                id: project._id,
-                title: project.title,
-                difficulty:
-                    project.difficulty,
-                category:
-                    project.category
-            },
+            project: projectContext,
 
-            estimatedDays,
+            team: teamMembers,
 
-            estimatedBudget,
+            estimatedDays:
+                projectContext.estimatedDays,
+
+            estimatedBudget:
+                projectContext.estimatedBudget,
 
             availableDays,
 
@@ -1507,12 +1435,14 @@ const analyzeFeasibility = async (
 
             currentTeamSize,
 
-            recommendedTeamSize
+            recommendedTeamSize:
+                projectContext.recommendedTeamSize,
+
+            calculatedOverallScore
         }
     };
 };
 
 module.exports = {
-    analyzeFeasibility,
-    extractRequirements
+    analyzeFeasibility
 };

@@ -1,6 +1,7 @@
 const {
     analyzeProject,
-    getTechnologyRecommendations
+    getTechnologyRecommendations,
+    extractRequirements
 } = require("../services/aiService");
 
 const analyzeProjectIdea = async (req, res) => {
@@ -18,21 +19,37 @@ const analyzeProjectIdea = async (req, res) => {
             });
         }
 
-        const analysis = analyzeProject(
-            title,
-            description,
+        const analysis = await analyzeProject(
+            title.trim(),
+            description.trim(),
             category || "General",
             difficulty || "Beginner"
         );
 
-        res.json({
+        console.log(
+            "Gemini analysis:",
+            analysis
+        );
+
+        if (!analysis || typeof analysis !== "object") {
+            return res.status(500).json({
+                message: "Gemini returned an invalid analysis"
+            });
+        }
+
+        return res.json({
             message: "Project analyzed successfully 🤖",
             analysis
         });
 
     } catch (error) {
-        res.status(500).json({
-            message: "Project analysis failed",
+        console.error(
+            "AI analysis error:",
+            error
+        );
+
+        return res.status(500).json({
+            message: "AI analysis failed",
             error: error.message
         });
     }
@@ -40,21 +57,30 @@ const analyzeProjectIdea = async (req, res) => {
 
 const getTechnologies = async (req, res) => {
     try {
-        const { category } = req.query;
+        const category =
+            req.query.category || "General";
 
-        const technologies = getTechnologyRecommendations(
-            category || "General"
-        );
+        const technologies =
+            await getTechnologyRecommendations(
+                category
+            );
 
-        res.json({
-            message: "Technology recommendations generated successfully",
-            category: category || "General",
+        return res.json({
+            message:
+                "Technology recommendations generated successfully",
+            category,
             technologies
         });
 
     } catch (error) {
-        res.status(500).json({
-            message: "Failed to get technologies",
+        console.error(
+            "Technology recommendation error:",
+            error
+        );
+
+        return res.status(500).json({
+            message:
+                "Failed to get technologies",
             error: error.message
         });
     }
@@ -63,28 +89,38 @@ const getTechnologies = async (req, res) => {
 const getRoadmap = async (req, res) => {
     try {
         const {
-            category,
-            difficulty
+            title = "Student Project",
+            description = "Software project",
+            category = "General",
+            difficulty = "Beginner"
         } = req.query;
 
-        const analysis = analyzeProject(
-            "Project",
-            "Project roadmap generation",
-            category || "General",
-            difficulty || "Beginner"
-        );
+        const analysis =
+            await analyzeProject(
+                title,
+                description,
+                category,
+                difficulty
+            );
 
-        res.json({
-            message: "Project roadmap generated successfully",
-            category: category || "General",
-            difficulty: difficulty || "Beginner",
-            roadmap: analysis.roadmap,
-            estimatedDays: analysis.estimatedDays
+        return res.json({
+            message:
+                "Project roadmap generated successfully",
+            roadmap:
+                analysis.roadmap || [],
+            estimatedDays:
+                analysis.estimatedDays || 0
         });
 
     } catch (error) {
-        res.status(500).json({
-            message: "Failed to generate roadmap",
+        console.error(
+            "Roadmap error:",
+            error
+        );
+
+        return res.status(500).json({
+            message:
+                "Failed to generate roadmap",
             error: error.message
         });
     }
@@ -92,25 +128,41 @@ const getRoadmap = async (req, res) => {
 
 const getBudget = async (req, res) => {
     try {
-        const { difficulty } = req.query;
+        const {
+            title = "Student Project",
+            description = "Software project",
+            category = "General",
+            difficulty = "Beginner"
+        } = req.query;
 
-        const analysis = analyzeProject(
-            "Project",
-            "Project budget estimation",
-            "General",
-            difficulty || "Beginner"
-        );
+        const analysis =
+            await analyzeProject(
+                title,
+                description,
+                category,
+                difficulty
+            );
 
-        res.json({
-            message: "Project budget estimated successfully 💰",
-            difficulty: difficulty || "Beginner",
-            estimatedDays: analysis.estimatedDays,
-            estimatedBudget: analysis.estimatedBudget
+        return res.json({
+            message:
+                "Project budget estimated successfully 💰",
+            estimatedDays:
+                analysis.estimatedDays || 0,
+            estimatedBudget:
+                analysis.estimatedBudget || 0,
+            complexity:
+                analysis.complexity || "Unknown"
         });
 
     } catch (error) {
-        res.status(500).json({
-            message: "Failed to estimate budget",
+        console.error(
+            "Budget error:",
+            error
+        );
+
+        return res.status(500).json({
+            message:
+                "Failed to estimate budget",
             error: error.message
         });
     }

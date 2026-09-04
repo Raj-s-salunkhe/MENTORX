@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { apiUrl } from "./api";
 
 function Login({ onLogin, onGoRegister }) {
     const [email, setEmail] = useState("");
@@ -14,7 +15,7 @@ function Login({ onLogin, onGoRegister }) {
 
         try {
             const response = await fetch(
-                "http://localhost:5000/api/auth/login",
+                apiUrl("/api/auth/login"),
                 {
                     method: "POST",
                     headers: {

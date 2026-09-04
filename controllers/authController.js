@@ -11,7 +11,16 @@ const registerUser = async (req, res) => {
             college,
             experienceLevel,
             skills,
-            interests
+            interests,
+            preferredTechnologies,
+            previousProjects,
+            currentTeamSize,
+            availableDevelopmentDays,
+            availableBudget,
+            github,
+            linkedin,
+            availability,
+            bio
         } = req.body;
 
         if (!name || !email || !password) {
@@ -20,7 +29,9 @@ const registerUser = async (req, res) => {
             });
         }
 
-        const existingUser = await User.findOne({ email });
+        const existingUser = await User.findOne({
+            email: email.toLowerCase().trim()
+        });
 
         if (existingUser) {
             return res.status(400).json({
@@ -28,16 +39,35 @@ const registerUser = async (req, res) => {
             });
         }
 
-        const hashedPassword = await bcrypt.hash(password, 10);
+        const hashedPassword = await bcrypt.hash(
+            password,
+            10
+        );
 
         const user = await User.create({
-            name,
-            email,
+            name: name.trim(),
+            email: email.toLowerCase().trim(),
             password: hashedPassword,
-            college,
-            experienceLevel,
-            skills,
-            interests
+            bio: bio || "",
+            college: college || "",
+            experienceLevel:
+                experienceLevel || "Beginner",
+            skills: skills || [],
+            interests: interests || [],
+            preferredTechnologies:
+                preferredTechnologies || [],
+            previousProjects:
+                previousProjects || [],
+            currentTeamSize:
+                Number(currentTeamSize) || 1,
+            availableDevelopmentDays:
+                Number(availableDevelopmentDays) || 0,
+            availableBudget:
+                Number(availableBudget) || 0,
+            github: github || "",
+            linkedin: linkedin || "",
+            availability:
+                availability || "Available"
         });
 
         res.status(201).json({
@@ -47,12 +77,32 @@ const registerUser = async (req, res) => {
                 name: user.name,
                 email: user.email,
                 college: user.college,
+                experienceLevel: user.experienceLevel,
                 skills: user.skills,
-                interests: user.interests
+                interests: user.interests,
+                preferredTechnologies:
+                    user.preferredTechnologies,
+                previousProjects:
+                    user.previousProjects,
+                currentTeamSize:
+                    user.currentTeamSize,
+                availableDevelopmentDays:
+                    user.availableDevelopmentDays,
+                availableBudget:
+                    user.availableBudget,
+                github: user.github,
+                linkedin: user.linkedin,
+                availability: user.availability,
+                bio: user.bio
             }
         });
 
     } catch (error) {
+        console.error(
+            "Registration error:",
+            error
+        );
+
         res.status(500).json({
             message: "Registration failed",
             error: error.message
@@ -66,11 +116,14 @@ const loginUser = async (req, res) => {
 
         if (!email || !password) {
             return res.status(400).json({
-                message: "Email and password are required"
+                message:
+                    "Email and password are required"
             });
         }
 
-        const user = await User.findOne({ email });
+        const user = await User.findOne({
+            email: email.toLowerCase().trim()
+        });
 
         if (!user) {
             return res.status(401).json({
@@ -78,10 +131,11 @@ const loginUser = async (req, res) => {
             });
         }
 
-        const passwordMatch = await bcrypt.compare(
-            password,
-            user.password
-        );
+        const passwordMatch =
+            await bcrypt.compare(
+                password,
+                user.password
+            );
 
         if (!passwordMatch) {
             return res.status(401).json({
@@ -90,9 +144,13 @@ const loginUser = async (req, res) => {
         }
 
         const token = jwt.sign(
-            { userId: user._id },
+            {
+                userId: user._id
+            },
             process.env.JWT_SECRET,
-            { expiresIn: "7d" }
+            {
+                expiresIn: "7d"
+            }
         );
 
         res.json({
@@ -103,12 +161,34 @@ const loginUser = async (req, res) => {
                 name: user.name,
                 email: user.email,
                 college: user.college,
+                experienceLevel:
+                    user.experienceLevel,
                 skills: user.skills,
-                interests: user.interests
+                interests: user.interests,
+                preferredTechnologies:
+                    user.preferredTechnologies,
+                previousProjects:
+                    user.previousProjects,
+                currentTeamSize:
+                    user.currentTeamSize,
+                availableDevelopmentDays:
+                    user.availableDevelopmentDays,
+                availableBudget:
+                    user.availableBudget,
+                github: user.github,
+                linkedin: user.linkedin,
+                availability:
+                    user.availability,
+                bio: user.bio
             }
         });
 
     } catch (error) {
+        console.error(
+            "Login error:",
+            error
+        );
+
         res.status(500).json({
             message: "Login failed",
             error: error.message
@@ -118,7 +198,9 @@ const loginUser = async (req, res) => {
 
 const getProfile = async (req, res) => {
     try {
-        const user = await User.findById(req.userId).select("-password");
+        const user =
+            await User.findById(req.userId)
+                .select("-password");
 
         if (!user) {
             return res.status(404).json({
@@ -127,13 +209,15 @@ const getProfile = async (req, res) => {
         }
 
         res.json({
-            message: "Profile loaded successfully",
+            message:
+                "Profile loaded successfully",
             user
         });
 
     } catch (error) {
         res.status(500).json({
-            message: "Failed to load profile",
+            message:
+                "Failed to load profile",
             error: error.message
         });
     }
@@ -148,29 +232,61 @@ const updateProfile = async (req, res) => {
             experienceLevel,
             skills,
             interests,
+            preferredTechnologies,
+            previousProjects,
+            currentTeamSize,
+            availableDevelopmentDays,
+            availableBudget,
             github,
             linkedin,
             availability
         } = req.body;
 
-        const user = await User.findByIdAndUpdate(
-            req.userId,
-            {
-                name,
-                bio,
-                college,
-                experienceLevel,
-                skills,
-                interests,
-                github,
-                linkedin,
-                availability
-            },
-            {
-                new: true,
-                runValidators: true
+        const updateData = {
+            name,
+            bio,
+            college,
+            experienceLevel,
+            skills,
+            interests,
+            preferredTechnologies,
+            previousProjects,
+            currentTeamSize:
+                currentTeamSize !== undefined
+                    ? Number(currentTeamSize)
+                    : undefined,
+            availableDevelopmentDays:
+                availableDevelopmentDays !== undefined
+                    ? Number(
+                        availableDevelopmentDays
+                    )
+                    : undefined,
+            availableBudget:
+                availableBudget !== undefined
+                    ? Number(availableBudget)
+                    : undefined,
+            github,
+            linkedin,
+            availability
+        };
+
+        Object.keys(updateData).forEach(
+            (key) => {
+                if (updateData[key] === undefined) {
+                    delete updateData[key];
+                }
             }
-        ).select("-password");
+        );
+
+        const user =
+            await User.findByIdAndUpdate(
+                req.userId,
+                updateData,
+                {
+                    new: true,
+                    runValidators: true
+                }
+            ).select("-password");
 
         if (!user) {
             return res.status(404).json({
@@ -179,13 +295,20 @@ const updateProfile = async (req, res) => {
         }
 
         res.json({
-            message: "Profile updated successfully ✅",
+            message:
+                "Profile updated successfully ✅",
             user
         });
 
     } catch (error) {
+        console.error(
+            "Profile update error:",
+            error
+        );
+
         res.status(500).json({
-            message: "Profile update failed",
+            message:
+                "Profile update failed",
             error: error.message
         });
     }
