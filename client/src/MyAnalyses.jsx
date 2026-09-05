@@ -1,56 +1,83 @@
 import React, { useEffect, useState } from "react";
-
-const API_URL = "http://localhost:5000";
+import { apiUrl } from "./api";
 
 const MyAnalyses = ({
     onBack,
     onOpenAnalysis
 }) => {
-    const [analyses, setAnalyses] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
-    const [search, setSearch] = useState("");
-    const [filter, setFilter] = useState("All");
+    const [analyses, setAnalyses] =
+        useState([]);
 
+    const [loading, setLoading] =
+        useState(true);
+
+    const [error, setError] =
+        useState("");
+
+    const [search, setSearch] =
+        useState("");
+
+    const [filter, setFilter] =
+        useState("All");
+
+
+    /* =====================================================
+       TOKEN
+    ===================================================== */
 
     const getToken = () => {
-        return localStorage.getItem("token");
+        return localStorage.getItem(
+            "token"
+        );
     };
 
 
     /* =====================================================
-       LOAD
+       LOAD ANALYSES
     ===================================================== */
 
     const loadAnalyses = async () => {
+
         try {
+
             setLoading(true);
             setError("");
 
-            const response = await fetch(
-                `${API_URL}/api/feasibility`,
-                {
-                    headers: {
-                        Authorization:
-                            `Bearer ${getToken()}`
-                    }
-                }
-            );
+            const response =
+                await fetch(
+                    apiUrl(
+                        "/api/feasibility"
+                    ),
+                    {
+                        method: "GET",
 
-            const data = await response.json();
+                        headers: {
+                            Authorization:
+                                `Bearer ${getToken()}`
+                        }
+                    }
+                );
+
+
+            const data =
+                await response.json();
+
 
             if (!response.ok) {
+
                 throw new Error(
                     data.message ||
                     "Failed to load analyses"
                 );
             }
 
+
             setAnalyses(
                 data.analyses || []
             );
 
         } catch (err) {
+
             console.error(
                 "Load analyses error:",
                 err
@@ -62,6 +89,7 @@ const MyAnalyses = ({
             );
 
         } finally {
+
             setLoading(false);
         }
     };
@@ -83,63 +111,81 @@ const MyAnalyses = ({
                 "Are you sure you want to delete this analysis?"
             );
 
+
         if (!confirmed) {
             return;
         }
 
-        try {
-            const response = await fetch(
-                `${API_URL}/api/feasibility/${id}`,
-                {
-                    method: "DELETE",
 
-                    headers: {
-                        Authorization:
-                            `Bearer ${getToken()}`
+        try {
+
+            setError("");
+
+            const response =
+                await fetch(
+                    apiUrl(
+                        `/api/feasibility/${id}`
+                    ),
+                    {
+                        method: "DELETE",
+
+                        headers: {
+                            Authorization:
+                                `Bearer ${getToken()}`
+                        }
                     }
-                }
-            );
+                );
+
 
             const data =
                 await response.json();
 
+
             if (!response.ok) {
+
                 throw new Error(
                     data.message ||
                     "Failed to delete analysis"
                 );
             }
 
+
             setAnalyses(
-                previous =>
+                (previous) =>
                     previous.filter(
-                        item =>
+                        (item) =>
                             item._id !== id
                     )
             );
 
         } catch (err) {
+
             console.error(
                 "Delete analysis error:",
                 err
             );
 
-            setError(err.message);
+            setError(
+                err.message ||
+                "Failed to delete analysis"
+            );
         }
     };
 
 
     /* =====================================================
-       HELPERS
+       CLASSIFICATION
     ===================================================== */
 
     const getClassificationClass = (
         classification
     ) => {
+
         const value =
             String(
                 classification || ""
             ).toLowerCase();
+
 
         if (
             value.includes("feasible") &&
@@ -148,6 +194,7 @@ const MyAnalyses = ({
             return "analysis-feasible";
         }
 
+
         if (
             value.includes("difficult") ||
             value.includes("modification")
@@ -155,55 +202,30 @@ const MyAnalyses = ({
             return "analysis-warning";
         }
 
+
         return "analysis-danger";
     };
 
 
-    const filteredAnalyses =
-        analyses.filter((item) => {
+    /* =====================================================
+       FILTER
+    ===================================================== */
 
-            const query =
-                search.trim().toLowerCase();
-
-            const title =
-                item.projectTitle
-                    ?.toLowerCase() || "";
-
-            const classification =
-                item.overallFeasibility
-                    ?.classification
-                    ?.toLowerCase() || "";
-
-            const matchesSearch =
-                !query ||
-                title.includes(query) ||
-                classification.includes(query);
-
-            const matchesFilter =
-                filter === "All" ||
-                classificationMatches(
-                    item,
-                    filter
-                );
-
-            return (
-                matchesSearch &&
-                matchesFilter
-            );
-        });
-
-
-    function classificationMatches(
+    const classificationMatches = (
         item,
         selected
-    ) {
+    ) => {
+
         const classification =
             String(
-                item.overallFeasibility
+                item
+                    .overallFeasibility
                     ?.classification || ""
             ).toLowerCase();
 
+
         if (selected === "Feasible") {
+
             return (
                 classification.includes(
                     "feasible"
@@ -214,7 +236,9 @@ const MyAnalyses = ({
             );
         }
 
+
         if (selected === "Needs Work") {
+
             return (
                 classification.includes(
                     "difficult"
@@ -225,43 +249,103 @@ const MyAnalyses = ({
             );
         }
 
+
         if (selected === "Not Feasible") {
-            return (
-                classification.includes(
-                    "not feasible"
-                )
+
+            return classification.includes(
+                "not feasible"
             );
         }
 
-        return true;
-    }
 
+        return true;
+    };
+
+
+    /* =====================================================
+       FILTERED ANALYSES
+    ===================================================== */
+
+    const filteredAnalyses =
+        analyses.filter((item) => {
+
+            const query =
+                search
+                    .trim()
+                    .toLowerCase();
+
+
+            const title =
+                item.projectTitle
+                    ?.toLowerCase() || "";
+
+
+            const classification =
+                item
+                    .overallFeasibility
+                    ?.classification
+                    ?.toLowerCase() || "";
+
+
+            const matchesSearch =
+                !query ||
+                title.includes(query) ||
+                classification.includes(
+                    query
+                );
+
+
+            const matchesFilter =
+                filter === "All" ||
+                classificationMatches(
+                    item,
+                    filter
+                );
+
+
+            return (
+                matchesSearch &&
+                matchesFilter
+            );
+        });
+
+
+    /* =====================================================
+       AVERAGE SCORE
+    ===================================================== */
 
     const averageScore =
         analyses.length > 0
             ? Math.round(
-                analyses.reduce(
-                    (sum, item) =>
-                        sum +
-                        (
-                            item
-                                .overallFeasibility
-                                ?.score || 0
-                        ),
-                    0
-                ) / analyses.length
-            )
+                  analyses.reduce(
+                      (sum, item) =>
+                          sum +
+                          (
+                              item
+                                  .overallFeasibility
+                                  ?.score || 0
+                          ),
+                      0
+                  ) /
+                      analyses.length
+              )
             : 0;
 
 
+    /* =====================================================
+       FEASIBLE COUNT
+    ===================================================== */
+
     const feasibleCount =
-        analyses.filter(item => {
+        analyses.filter((item) => {
+
             const classification =
                 String(
                     item
                         .overallFeasibility
                         ?.classification || ""
                 ).toLowerCase();
+
 
             return (
                 classification.includes(
@@ -271,11 +355,28 @@ const MyAnalyses = ({
                     "not"
                 )
             );
+
         }).length;
+
+
+    /* =====================================================
+       SAFE BACK HANDLER
+    ===================================================== */
+
+    const handleBack = () => {
+
+        if (onBack) {
+            onBack();
+            return;
+        }
+
+        window.history.back();
+    };
 
 
     return (
         <div className="analyses-page">
+
 
             {/* =================================================
                 HEADER
@@ -287,14 +388,18 @@ const MyAnalyses = ({
 
                     <button
                         className="analyses-back-btn"
-                        onClick={onBack}
+                        onClick={
+                            handleBack
+                        }
                     >
                         ← Back
                     </button>
 
+
                     <span className="analyses-eyebrow">
                         MENTORX ANALYTICS
                     </span>
+
 
                     <h1>
                         My
@@ -304,20 +409,24 @@ const MyAnalyses = ({
                         </span>
                     </h1>
 
+
                     <p>
                         Review your saved AI
                         feasibility reports,
                         compare project scores,
-                        and revisit your decisions.
+                        and revisit your
+                        decisions.
                     </p>
 
                 </div>
 
 
                 <div className="analyses-header-orb">
+
                     <div className="analyses-orb-inner">
                         🧠
                     </div>
+
                 </div>
 
             </section>
@@ -327,89 +436,102 @@ const MyAnalyses = ({
                 OVERVIEW
             ================================================= */}
 
-            {!loading && !error && (
-                <section className="analyses-overview">
+            {!loading &&
+                !error && (
 
-                    <div className="analysis-overview-card">
+                    <section className="analyses-overview">
 
-                        <div className="overview-icon purple">
-                            📊
+
+                        <div className="analysis-overview-card">
+
+                            <div className="overview-icon purple">
+                                📊
+                            </div>
+
+                            <div>
+
+                                <span>
+                                    TOTAL ANALYSES
+                                </span>
+
+                                <strong>
+                                    {analyses.length}
+                                </strong>
+
+                            </div>
+
                         </div>
 
-                        <div>
-                            <span>
-                                TOTAL ANALYSES
-                            </span>
 
-                            <strong>
-                                {analyses.length}
-                            </strong>
+                        <div className="analysis-overview-card">
+
+                            <div className="overview-icon blue">
+                                🎯
+                            </div>
+
+                            <div>
+
+                                <span>
+                                    AVERAGE SCORE
+                                </span>
+
+                                <strong>
+                                    {averageScore}
+
+                                    <small>
+                                        /100
+                                    </small>
+                                </strong>
+
+                            </div>
+
                         </div>
 
-                    </div>
 
+                        <div className="analysis-overview-card">
 
-                    <div className="analysis-overview-card">
+                            <div className="overview-icon green">
+                                ✅
+                            </div>
 
-                        <div className="overview-icon blue">
-                            🎯
+                            <div>
+
+                                <span>
+                                    FEASIBLE PROJECTS
+                                </span>
+
+                                <strong>
+                                    {feasibleCount}
+                                </strong>
+
+                            </div>
+
                         </div>
 
-                        <div>
-                            <span>
-                                AVERAGE SCORE
-                            </span>
 
-                            <strong>
-                                {averageScore}
-                                <small>
-                                    /100
-                                </small>
-                            </strong>
+                        <div className="analysis-overview-card">
+
+                            <div className="overview-icon orange">
+                                💡
+                            </div>
+
+                            <div>
+
+                                <span>
+                                    DECISION TOOL
+                                </span>
+
+                                <strong className="overview-text">
+                                    AI Powered
+                                </strong>
+
+                            </div>
+
                         </div>
 
-                    </div>
 
-
-                    <div className="analysis-overview-card">
-
-                        <div className="overview-icon green">
-                            ✅
-                        </div>
-
-                        <div>
-                            <span>
-                                FEASIBLE PROJECTS
-                            </span>
-
-                            <strong>
-                                {feasibleCount}
-                            </strong>
-                        </div>
-
-                    </div>
-
-
-                    <div className="analysis-overview-card">
-
-                        <div className="overview-icon orange">
-                            💡
-                        </div>
-
-                        <div>
-                            <span>
-                                DECISION TOOL
-                            </span>
-
-                            <strong className="overview-text">
-                                AI Powered
-                            </strong>
-                        </div>
-
-                    </div>
-
-                </section>
-            )}
+                    </section>
+                )}
 
 
             {/* =================================================
@@ -417,12 +539,16 @@ const MyAnalyses = ({
             ================================================= */}
 
             {error && (
+
                 <div className="analyses-error">
+
                     <span>
                         ⚠️
                     </span>
 
+
                     <div>
+
                         <strong>
                             Something went wrong
                         </strong>
@@ -430,14 +556,19 @@ const MyAnalyses = ({
                         <p>
                             {error}
                         </p>
+
                     </div>
+
 
                     <button
                         className="analyses-retry-btn"
-                        onClick={loadAnalyses}
+                        onClick={
+                            loadAnalyses
+                        }
                     >
                         Retry
                     </button>
+
                 </div>
             )}
 
@@ -447,6 +578,7 @@ const MyAnalyses = ({
             ================================================= */}
 
             {loading && (
+
                 <div className="analyses-loading">
 
                     <div className="analyses-loading-icon">
@@ -480,11 +612,13 @@ const MyAnalyses = ({
 
                     <section className="analyses-toolbar">
 
+
                         <div className="analyses-search">
 
                             <span>
                                 🔎
                             </span>
+
 
                             <input
                                 type="text"
@@ -497,7 +631,9 @@ const MyAnalyses = ({
                                 }
                             />
 
+
                             {search && (
+
                                 <button
                                     onClick={() =>
                                         setSearch("")
@@ -505,6 +641,7 @@ const MyAnalyses = ({
                                 >
                                     ×
                                 </button>
+
                             )}
 
                         </div>
@@ -523,7 +660,8 @@ const MyAnalyses = ({
                                     <button
                                         key={option}
                                         className={
-                                            filter === option
+                                            filter ===
+                                            option
                                                 ? "analysis-filter active"
                                                 : "analysis-filter"
                                         }
@@ -541,6 +679,7 @@ const MyAnalyses = ({
 
                         </div>
 
+
                     </section>
                 )}
 
@@ -556,26 +695,37 @@ const MyAnalyses = ({
                     <div className="analyses-result-line">
 
                         Showing{" "}
+
                         <strong>
-                            {filteredAnalyses.length}
-                        </strong>{" "}
-                        of{" "}
+                            {
+                                filteredAnalyses.length
+                            }
+                        </strong>
+
+                        {" "}of{" "}
+
                         <strong>
                             {analyses.length}
-                        </strong>{" "}
-                        analyses
+                        </strong>
+
+                        {" "}analyses
+
 
                         {(search ||
-                            filter !== "All") && (
+                            filter !==
+                                "All") && (
 
                             <button
                                 onClick={() => {
                                     setSearch("");
-                                    setFilter("All");
+                                    setFilter(
+                                        "All"
+                                    );
                                 }}
                             >
                                 Clear filters
                             </button>
+
                         )}
 
                     </div>
@@ -596,25 +746,33 @@ const MyAnalyses = ({
                             🧠
                         </div>
 
+
                         <span className="analyses-empty-label">
                             NO REPORTS YET
                         </span>
+
 
                         <h2>
                             Your analysis library
                             is empty
                         </h2>
 
+
                         <p>
-                            Run a feasibility analysis
-                            on one of your projects and
-                            save the report. Your saved
-                            decisions will appear here.
+                            Run a feasibility
+                            analysis on one of
+                            your projects and
+                            save the report.
+                            Your saved decisions
+                            will appear here.
                         </p>
+
 
                         <button
                             className="primary-btn"
-                            onClick={onBack}
+                            onClick={
+                                handleBack
+                            }
                         >
                             ← Start Exploring
                         </button>
@@ -630,7 +788,8 @@ const MyAnalyses = ({
             {!loading &&
                 !error &&
                 analyses.length > 0 &&
-                filteredAnalyses.length === 0 && (
+                filteredAnalyses.length ===
+                    0 && (
 
                     <div className="analyses-empty compact">
 
@@ -638,20 +797,26 @@ const MyAnalyses = ({
                             🔍
                         </div>
 
+
                         <h2>
                             No matching analyses
                         </h2>
 
+
                         <p>
-                            Try another project name
-                            or change your filter.
+                            Try another project
+                            name or change your
+                            filter.
                         </p>
+
 
                         <button
                             className="secondary-btn"
                             onClick={() => {
                                 setSearch("");
-                                setFilter("All");
+                                setFilter(
+                                    "All"
+                                );
                             }}
                         >
                             Reset
@@ -662,12 +827,13 @@ const MyAnalyses = ({
 
 
             {/* =================================================
-                ANALYSIS CARDS
+                ANALYSIS LIST
             ================================================= */}
 
             {!loading &&
                 !error &&
-                filteredAnalyses.length > 0 && (
+                filteredAnalyses.length >
+                    0 && (
 
                     <section className="analyses-list">
 
@@ -677,7 +843,9 @@ const MyAnalyses = ({
                                 const score =
                                     item
                                         .overallFeasibility
-                                        ?.score ?? 0;
+                                        ?.score ??
+                                    0;
+
 
                                 const classification =
                                     item
@@ -685,34 +853,43 @@ const MyAnalyses = ({
                                         ?.classification ||
                                     "Unknown";
 
+
                                 const recommendation =
                                     item
                                         .overallFeasibility
                                         ?.recommendation ||
                                     "No recommendation";
 
+
                                 const classificationClass =
                                     getClassificationClass(
                                         classification
                                     );
 
+
                                 return (
+
                                     <article
-                                        className={`analysis-row ${classificationClass}`}
+                                        className={
+                                            `analysis-row ${classificationClass}`
+                                        }
                                         key={
                                             item._id
                                         }
                                     >
 
+
                                         {/* NUMBER */}
 
                                         <div className="analysis-row-number">
+
                                             {String(
                                                 index + 1
                                             ).padStart(
                                                 2,
                                                 "0"
                                             )}
+
                                         </div>
 
 
@@ -724,6 +901,7 @@ const MyAnalyses = ({
                                                 🧠
                                             </div>
 
+
                                             <div>
 
                                                 <h2>
@@ -732,6 +910,7 @@ const MyAnalyses = ({
                                                         "Untitled Project"
                                                     }
                                                 </h2>
+
 
                                                 <span>
                                                     AI Feasibility
@@ -752,6 +931,7 @@ const MyAnalyses = ({
                                                 <svg
                                                     viewBox="0 0 44 44"
                                                 >
+
                                                     <circle
                                                         cx="22"
                                                         cy="22"
@@ -759,23 +939,29 @@ const MyAnalyses = ({
                                                         className="score-ring-bg"
                                                     />
 
+
                                                     <circle
                                                         cx="22"
                                                         cy="22"
                                                         r="18"
                                                         className="score-ring-progress"
-                                                        strokeDasharray={`${
-                                                            score *
-                                                            1.13
-                                                        } 113`}
+                                                        strokeDasharray={
+                                                            `${
+                                                                score *
+                                                                1.13
+                                                            } 113`
+                                                        }
                                                     />
+
                                                 </svg>
+
 
                                                 <strong>
                                                     {score}
                                                 </strong>
 
                                             </div>
+
 
                                             <span>
                                                 /100
@@ -792,12 +978,18 @@ const MyAnalyses = ({
                                                 STATUS
                                             </span>
 
+
                                             <strong>
-                                                {classification}
+                                                {
+                                                    classification
+                                                }
                                             </strong>
 
+
                                             <small>
-                                                {recommendation}
+                                                {
+                                                    recommendation
+                                                }
                                             </small>
 
                                         </div>
@@ -811,37 +1003,39 @@ const MyAnalyses = ({
                                                 SAVED
                                             </span>
 
+
                                             <strong>
                                                 {item.createdAt
                                                     ? new Date(
-                                                        item.createdAt
-                                                    ).toLocaleDateString(
-                                                        undefined,
-                                                        {
-                                                            day:
-                                                                "2-digit",
-                                                            month:
-                                                                "short",
-                                                            year:
-                                                                "numeric"
-                                                        }
-                                                    )
+                                                          item.createdAt
+                                                      ).toLocaleDateString(
+                                                          undefined,
+                                                          {
+                                                              day:
+                                                                  "2-digit",
+                                                              month:
+                                                                  "short",
+                                                              year:
+                                                                  "numeric"
+                                                          }
+                                                      )
                                                     : "N/A"}
                                             </strong>
+
 
                                             <small>
                                                 {item.createdAt
                                                     ? new Date(
-                                                        item.createdAt
-                                                    ).toLocaleTimeString(
-                                                        undefined,
-                                                        {
-                                                            hour:
-                                                                "2-digit",
-                                                            minute:
-                                                                "2-digit"
-                                                        }
-                                                    )
+                                                          item.createdAt
+                                                      ).toLocaleTimeString(
+                                                          undefined,
+                                                          {
+                                                              hour:
+                                                                  "2-digit",
+                                                              minute:
+                                                                  "2-digit"
+                                                          }
+                                                      )
                                                     : ""}
                                             </small>
 
@@ -861,10 +1055,13 @@ const MyAnalyses = ({
                                                 }
                                             >
                                                 View
+
                                                 <span>
                                                     →
                                                 </span>
+
                                             </button>
+
 
                                             <button
                                                 className="analysis-delete-btn"
@@ -880,7 +1077,9 @@ const MyAnalyses = ({
 
                                         </div>
 
+
                                     </article>
+
                                 );
                             }
                         )}
