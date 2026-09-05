@@ -15,16 +15,80 @@ const app = express();
 
 const PORT = process.env.PORT || 5000;
 
-/* =========================
-   MIDDLEWARE
-========================= */
 
-app.use(cors());
+/* =========================================
+   BASIC MIDDLEWARE
+========================================= */
+
+app.use(
+    cors({
+        origin: true,
+        credentials: true
+    })
+);
+
 app.use(express.json());
 
-/* =========================
-   ROUTES
-========================= */
+
+/* =========================================
+   DATABASE CONNECTION
+========================================= */
+
+let isConnected = false;
+
+async function connectDatabase() {
+    if (isConnected && mongoose.connection.readyState === 1) {
+        return;
+    }
+
+    if (!process.env.MONGODB_URI) {
+        throw new Error("MONGODB_URI is missing");
+    }
+
+    await mongoose.connect(process.env.MONGODB_URI);
+
+    isConnected = true;
+
+    console.log("MongoDB Connected Successfully ✅");
+}
+
+
+/* =========================================
+   DATABASE MIDDLEWARE
+   Runs BEFORE API routes
+========================================= */
+
+app.use(async (req, res, next) => {
+    try {
+        await connectDatabase();
+        next();
+    } catch (error) {
+        console.error(
+            "MongoDB Connection Failed ❌",
+            error.message
+        );
+
+        return res.status(500).json({
+            message: "Database connection failed"
+        });
+    }
+});
+
+
+/* =========================================
+   HEALTH CHECK
+========================================= */
+
+app.get("/", (req, res) => {
+    res.json({
+        message: "MENTORX Backend is Running 🚀"
+    });
+});
+
+
+/* =========================================
+   API ROUTES
+========================================= */
 
 app.use("/api/auth", authRoutes);
 app.use("/api/projects", projectRoutes);
@@ -33,39 +97,32 @@ app.use("/api/ai", aiRoutes);
 app.use("/api/feasibility", feasibilityRoutes);
 app.use("/api/invitations", invitationRoutes);
 
-/* =========================
-   HOME
-========================= */
 
-app.get("/", (req, res) => {
-    res.json({
-        message: "MENTORX Backend is Running 🚀"
-    });
-});
+/* =========================================
+   LOCAL DEVELOPMENT
+========================================= */
 
-/* =========================
-   MONGODB
-========================= */
-
-mongoose
-    .connect(process.env.MONGODB_URI)
-    .then(() => {
-        console.log(
-            "MongoDB Connected Successfully ✅"
-        );
-
-        app.listen(PORT, () => {
-            console.log(
-                `MENTORX Backend running on http://localhost:${PORT}`
+if (require.main === module) {
+    connectDatabase()
+        .then(() => {
+            app.listen(PORT, () => {
+                console.log(
+                    `MENTORX Backend running on http://localhost:${PORT}`
+                );
+            });
+        })
+        .catch((error) => {
+            console.error(
+                "MongoDB Connection Failed ❌"
             );
-        });
-    })
-    .catch((error) => {
-        console.error(
-            "MongoDB Connection Failed ❌"
-        );
 
-        console.error(
-            error.message
-        );
-    });
+            console.error(error.message);
+        });
+}
+
+
+/* =========================================
+   VERCEL
+========================================= */
+
+module.exports = app;

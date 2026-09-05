@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
-
-const API_URL = "http://localhost:5000";
+import { apiUrl } from "./api";
 
 const Feasibility = ({
     onBack,
@@ -32,19 +31,24 @@ const Feasibility = ({
         localStorage.getItem("token");
 
 
-    /*
-     * Load projects
-     */
+    /* =========================
+       LOAD DATA
+    ========================= */
+
     useEffect(() => {
         loadProjects();
         loadProfile();
     }, []);
 
 
+    /* =========================
+       LOAD PROJECTS
+    ========================= */
+
     const loadProjects = async () => {
         try {
             const response = await fetch(
-                `${API_URL}/api/projects`,
+                apiUrl("/api/projects"),
                 {
                     headers: {
                         Authorization:
@@ -53,7 +57,8 @@ const Feasibility = ({
                 }
             );
 
-            const data = await response.json();
+            const data =
+                await response.json();
 
             if (!response.ok) {
                 throw new Error(
@@ -67,19 +72,27 @@ const Feasibility = ({
             );
 
         } catch (err) {
-            console.error(err);
-            setError(err.message);
+            console.error(
+                "Projects error:",
+                err
+            );
+
+            setError(
+                err.message ||
+                "Failed to fetch projects"
+            );
         }
     };
 
 
-    /*
-     * Load user profile
-     */
+    /* =========================
+       LOAD PROFILE
+    ========================= */
+
     const loadProfile = async () => {
         try {
             const response = await fetch(
-                `${API_URL}/api/auth/profile`,
+                apiUrl("/api/auth/profile"),
                 {
                     headers: {
                         Authorization:
@@ -88,7 +101,8 @@ const Feasibility = ({
                 }
             );
 
-            const data = await response.json();
+            const data =
+                await response.json();
 
             if (!response.ok) {
                 throw new Error(
@@ -110,44 +124,52 @@ const Feasibility = ({
     };
 
 
-    /*
-     * Analyze
-     */
+    /* =========================
+       ANALYZE
+    ========================= */
+
     const handleAnalyze = async () => {
         if (!selectedProject) {
             setError(
                 "Please select a project first."
             );
+
             return;
         }
 
         try {
             setLoading(true);
+
             setError("");
             setMessage("");
             setAnalysis(null);
 
-            const response = await fetch(
-                `${API_URL}/api/feasibility/analyze`,
-                {
-                    method: "POST",
+            const response =
+                await fetch(
+                    apiUrl(
+                        "/api/feasibility/analyze"
+                    ),
+                    {
+                        method: "POST",
 
-                    headers: {
-                        "Content-Type":
-                            "application/json",
+                        headers: {
+                            "Content-Type":
+                                "application/json",
 
-                        Authorization:
-                            `Bearer ${getToken()}`
-                    },
+                            Authorization:
+                                `Bearer ${getToken()}`
+                        },
 
-                    body: JSON.stringify({
-                        projectId:
-                            selectedProject
-                    })
-                }
-            );
+                        body:
+                            JSON.stringify({
+                                projectId:
+                                    selectedProject
+                            })
+                    }
+                );
 
-            const data = await response.json();
+            const data =
+                await response.json();
 
             if (!response.ok) {
                 throw new Error(
@@ -165,8 +187,15 @@ const Feasibility = ({
             );
 
         } catch (err) {
-            console.error(err);
-            setError(err.message);
+            console.error(
+                "Analysis error:",
+                err
+            );
+
+            setError(
+                err.message ||
+                "Analysis failed"
+            );
 
         } finally {
             setLoading(false);
@@ -174,43 +203,51 @@ const Feasibility = ({
     };
 
 
-    /*
-     * Save
-     */
+    /* =========================
+       SAVE
+    ========================= */
+
     const handleSave = async () => {
         if (!selectedProject) {
             setError(
                 "Please select a project."
             );
+
             return;
         }
 
         try {
             setSaving(true);
+
             setError("");
             setMessage("");
 
-            const response = await fetch(
-                `${API_URL}/api/feasibility/save`,
-                {
-                    method: "POST",
+            const response =
+                await fetch(
+                    apiUrl(
+                        "/api/feasibility/save"
+                    ),
+                    {
+                        method: "POST",
 
-                    headers: {
-                        "Content-Type":
-                            "application/json",
+                        headers: {
+                            "Content-Type":
+                                "application/json",
 
-                        Authorization:
-                            `Bearer ${getToken()}`
-                    },
+                            Authorization:
+                                `Bearer ${getToken()}`
+                        },
 
-                    body: JSON.stringify({
-                        projectId:
-                            selectedProject
-                    })
-                }
-            );
+                        body:
+                            JSON.stringify({
+                                projectId:
+                                    selectedProject
+                            })
+                    }
+                );
 
-            const data = await response.json();
+            const data =
+                await response.json();
 
             if (!response.ok) {
                 throw new Error(
@@ -219,10 +256,6 @@ const Feasibility = ({
                 );
             }
 
-            /*
-             * Update displayed analysis
-             * with saved result.
-             */
             if (data.analysis) {
                 setAnalysis(
                     data.analysis
@@ -234,14 +267,25 @@ const Feasibility = ({
             );
 
         } catch (err) {
-            console.error(err);
-            setError(err.message);
+            console.error(
+                "Save error:",
+                err
+            );
+
+            setError(
+                err.message ||
+                "Failed to save analysis"
+            );
 
         } finally {
             setSaving(false);
         }
     };
 
+
+    /* =========================
+       SELECTED PROJECT
+    ========================= */
 
     const selectedProjectData =
         projects.find(
@@ -250,6 +294,10 @@ const Feasibility = ({
                 selectedProject
         );
 
+
+    /* =========================
+       SCORE HELPER
+    ========================= */
 
     const getScore = (key) => {
         return (
@@ -262,9 +310,14 @@ const Feasibility = ({
     return (
         <div className="page-container feasibility-page">
 
+            {/* =========================
+                HEADER
+            ========================= */}
+
             <div className="page-header">
 
                 <div>
+
                     <button
                         className="secondary-btn"
                         onClick={onBack}
@@ -281,7 +334,9 @@ const Feasibility = ({
                         can realistically
                         build a project.
                     </p>
+
                 </div>
+
 
                 <button
                     className="secondary-btn"
@@ -292,6 +347,10 @@ const Feasibility = ({
 
             </div>
 
+
+            {/* =========================
+                USER CAPABILITIES
+            ========================= */}
 
             {profile && (
                 <div className="card">
@@ -315,6 +374,7 @@ const Feasibility = ({
                             </span>
                         </div>
 
+
                         <div className="stat-card">
                             <strong>
                                 {
@@ -327,6 +387,7 @@ const Feasibility = ({
                                 Skills
                             </span>
                         </div>
+
 
                         <div className="stat-card">
                             <strong>
@@ -342,6 +403,7 @@ const Feasibility = ({
                             </span>
                         </div>
 
+
                         <div className="stat-card">
                             <strong>
                                 {
@@ -356,6 +418,7 @@ const Feasibility = ({
                             </span>
                         </div>
 
+
                         <div className="stat-card">
                             <strong>
                                 {
@@ -369,6 +432,7 @@ const Feasibility = ({
                             </span>
                         </div>
 
+
                         <div className="stat-card">
                             <strong>
                                 {
@@ -381,6 +445,7 @@ const Feasibility = ({
                                 Available Days
                             </span>
                         </div>
+
 
                         <div className="stat-card">
                             <strong>
@@ -402,16 +467,22 @@ const Feasibility = ({
             )}
 
 
+            {/* =========================
+                PROJECT SELECTION
+            ========================= */}
+
             <div className="card">
 
                 <h2>
                     Select Project
                 </h2>
 
+
                 <select
                     className="input"
                     value={selectedProject}
                     onChange={(e) => {
+
                         setSelectedProject(
                             e.target.value
                         );
@@ -421,9 +492,11 @@ const Feasibility = ({
                         setError("");
                     }}
                 >
+
                     <option value="">
                         -- Select Project --
                     </option>
+
 
                     {projects.map(
                         (project) => (
@@ -435,16 +508,21 @@ const Feasibility = ({
                             </option>
                         )
                     )}
+
                 </select>
 
+
+                {/* PROJECT PREVIEW */}
 
                 {selectedProjectData && (
                     <div
                         className="project-preview"
                         style={{
-                            marginTop: "20px"
+                            marginTop:
+                                "20px"
                         }}
                     >
+
                         <h3>
                             {
                                 selectedProjectData.title
@@ -456,6 +534,7 @@ const Feasibility = ({
                                 selectedProjectData.description
                             }
                         </p>
+
                     </div>
                 )}
 
@@ -468,7 +547,8 @@ const Feasibility = ({
                         !selectedProject
                     }
                     style={{
-                        marginTop: "20px"
+                        marginTop:
+                            "20px"
                     }}
                 >
                     {loading
@@ -479,12 +559,20 @@ const Feasibility = ({
             </div>
 
 
+            {/* =========================
+                SUCCESS
+            ========================= */}
+
             {message && (
                 <div className="success-message">
                     {message}
                 </div>
             )}
 
+
+            {/* =========================
+                ERROR
+            ========================= */}
 
             {error && (
                 <div className="error-message">
@@ -493,8 +581,14 @@ const Feasibility = ({
             )}
 
 
+            {/* =========================
+                RESULTS
+            ========================= */}
+
             {analysis && (
                 <div className="feasibility-results">
+
+                    {/* OVERALL */}
 
                     <div className="card">
 
@@ -504,8 +598,11 @@ const Feasibility = ({
 
                         <div
                             style={{
-                                fontSize: "48px",
-                                fontWeight: "bold"
+                                fontSize:
+                                    "48px",
+
+                                fontWeight:
+                                    "bold"
                             }}
                         >
                             {
@@ -516,6 +613,7 @@ const Feasibility = ({
                             }/100
                         </div>
 
+
                         <h3>
                             {
                                 analysis
@@ -525,6 +623,7 @@ const Feasibility = ({
                             }
                         </h3>
 
+
                         <p>
                             {
                                 analysis
@@ -533,6 +632,7 @@ const Feasibility = ({
                                 "No recommendation"
                             }
                         </p>
+
 
                         <p>
                             {
@@ -545,6 +645,8 @@ const Feasibility = ({
 
                     </div>
 
+
+                    {/* BREAKDOWN */}
 
                     <div className="card">
 
@@ -560,10 +662,12 @@ const Feasibility = ({
                                         "technicalFeasibility"
                                     )}
                                 </strong>
+
                                 <span>
                                     Technical
                                 </span>
                             </div>
+
 
                             <div className="stat-card">
                                 <strong>
@@ -571,10 +675,12 @@ const Feasibility = ({
                                         "skillFeasibility"
                                     )}
                                 </strong>
+
                                 <span>
                                     Skills
                                 </span>
                             </div>
+
 
                             <div className="stat-card">
                                 <strong>
@@ -582,10 +688,12 @@ const Feasibility = ({
                                         "timeFeasibility"
                                     )}
                                 </strong>
+
                                 <span>
                                     Time
                                 </span>
                             </div>
+
 
                             <div className="stat-card">
                                 <strong>
@@ -593,10 +701,12 @@ const Feasibility = ({
                                         "financialFeasibility"
                                     )}
                                 </strong>
+
                                 <span>
                                     Financial
                                 </span>
                             </div>
+
 
                             <div className="stat-card">
                                 <strong>
@@ -604,10 +714,12 @@ const Feasibility = ({
                                         "dataFeasibility"
                                     )}
                                 </strong>
+
                                 <span>
                                     Data
                                 </span>
                             </div>
+
 
                             <div className="stat-card">
                                 <strong>
@@ -615,10 +727,12 @@ const Feasibility = ({
                                         "resourceFeasibility"
                                     )}
                                 </strong>
+
                                 <span>
                                     Resources
                                 </span>
                             </div>
+
 
                             <div className="stat-card">
                                 <strong>
@@ -626,10 +740,12 @@ const Feasibility = ({
                                         "teamFeasibility"
                                     )}
                                 </strong>
+
                                 <span>
                                     Team
                                 </span>
                             </div>
+
 
                             <div className="stat-card">
                                 <strong>
@@ -637,10 +753,12 @@ const Feasibility = ({
                                         "scalabilityFeasibility"
                                     )}
                                 </strong>
+
                                 <span>
                                     Scalability
                                 </span>
                             </div>
+
 
                             <div className="stat-card">
                                 <strong>
@@ -648,6 +766,7 @@ const Feasibility = ({
                                         "commercialFeasibility"
                                     )}
                                 </strong>
+
                                 <span>
                                     Commercial
                                 </span>
@@ -657,6 +776,8 @@ const Feasibility = ({
 
                     </div>
 
+
+                    {/* SKILLS */}
 
                     <div className="card">
 
@@ -673,6 +794,7 @@ const Feasibility = ({
                             }
                         </p>
 
+
                         <h3>
                             Skill Matches
                         </h3>
@@ -685,12 +807,15 @@ const Feasibility = ({
                                 []
                             ).map(
                                 (skill, index) => (
-                                    <li key={index}>
+                                    <li
+                                        key={index}
+                                    >
                                         ✅ {skill}
                                     </li>
                                 )
                             )}
                         </ul>
+
 
                         <h3>
                             Skill Gaps
@@ -704,7 +829,9 @@ const Feasibility = ({
                                 []
                             ).map(
                                 (skill, index) => (
-                                    <li key={index}>
+                                    <li
+                                        key={index}
+                                    >
                                         ⚠️ {skill}
                                     </li>
                                 )
@@ -713,6 +840,8 @@ const Feasibility = ({
 
                     </div>
 
+
+                    {/* TECHNICAL */}
 
                     <div className="card">
 
@@ -731,6 +860,8 @@ const Feasibility = ({
 
                     </div>
 
+
+                    {/* TIME */}
 
                     <div className="card">
 
@@ -762,6 +893,8 @@ const Feasibility = ({
                     </div>
 
 
+                    {/* FINANCIAL */}
+
                     <div className="card">
 
                         <h2>
@@ -792,6 +925,8 @@ const Feasibility = ({
                     </div>
 
 
+                    {/* TEAM */}
+
                     <div className="card">
 
                         <h2>
@@ -809,6 +944,8 @@ const Feasibility = ({
 
                     </div>
 
+
+                    {/* SCALABILITY */}
 
                     <div className="card">
 
@@ -828,6 +965,8 @@ const Feasibility = ({
                     </div>
 
 
+                    {/* DATA */}
+
                     <div className="card">
 
                         <h2>
@@ -845,6 +984,8 @@ const Feasibility = ({
 
                     </div>
 
+
+                    {/* RESOURCES */}
 
                     <div className="card">
 
@@ -864,6 +1005,8 @@ const Feasibility = ({
                     </div>
 
 
+                    {/* COMMERCIAL */}
+
                     <div className="card">
 
                         <h2>
@@ -882,6 +1025,8 @@ const Feasibility = ({
                     </div>
 
 
+                    {/* RISKS */}
+
                     <div className="card">
 
                         <h2>
@@ -889,31 +1034,40 @@ const Feasibility = ({
                         </h2>
 
                         <ul>
+
                             {(
                                 analysis
                                     .majorRisks ||
                                 []
                             ).map(
                                 (risk, index) => (
-                                    <li key={index}>
+                                    <li
+                                        key={index}
+                                    >
                                         <strong>
                                             {risk.risk}
                                         </strong>
+
                                         {" — "}
+
                                         {risk.severity}
                                     </li>
                                 )
                             )}
+
                         </ul>
 
                     </div>
 
+
+                    {/* MVP */}
 
                     <div className="card">
 
                         <h2>
                             🚀 MVP Recommendation
                         </h2>
+
 
                         <h3>
                             MVP Features
@@ -927,12 +1081,15 @@ const Feasibility = ({
                                 []
                             ).map(
                                 (feature, index) => (
-                                    <li key={index}>
+                                    <li
+                                        key={index}
+                                    >
                                         {feature}
                                     </li>
                                 )
                             )}
                         </ul>
+
 
                         <h3>
                             Future Features
@@ -946,7 +1103,9 @@ const Feasibility = ({
                                 []
                             ).map(
                                 (feature, index) => (
-                                    <li key={index}>
+                                    <li
+                                        key={index}
+                                    >
                                         {feature}
                                     </li>
                                 )
@@ -956,11 +1115,12 @@ const Feasibility = ({
                     </div>
 
 
+                    {/* PERSONALIZED */}
+
                     <div className="card">
 
                         <h2>
-                            🎯 Personalized
-                            Recommendations
+                            🎯 Personalized Recommendations
                         </h2>
 
                         <ul>
@@ -970,7 +1130,9 @@ const Feasibility = ({
                                 []
                             ).map(
                                 (item, index) => (
-                                    <li key={index}>
+                                    <li
+                                        key={index}
+                                    >
                                         {item}
                                     </li>
                                 )
@@ -980,7 +1142,7 @@ const Feasibility = ({
                     </div>
 
 
-                    {/* SAVE BUTTON */}
+                    {/* SAVE */}
 
                     <div className="card">
 
@@ -994,13 +1156,13 @@ const Feasibility = ({
                                 : "💾 Save Analysis"}
                         </button>
 
+
                         <button
                             className="secondary-btn"
-                            onClick={
-                                onOpenAnalyses
-                            }
+                            onClick={onOpenAnalyses}
                             style={{
-                                marginLeft: "10px"
+                                marginLeft:
+                                    "10px"
                             }}
                         >
                             📊 My Analyses

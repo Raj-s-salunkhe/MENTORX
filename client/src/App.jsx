@@ -13,7 +13,6 @@ import MyAnalyses from "./MyAnalyses";
 import FeasibilityDetails from "./FeasibilityDetails";
 import ProjectForm from "./ProjectForm";
 
-
 function App() {
     const [page, setPage] = useState("home");
 
@@ -29,7 +28,6 @@ function App() {
     const [aiStatus, setAiStatus] =
         useState("AI CORE ONLINE");
 
-
     const [user, setUser] = useState(() => {
         const savedUser =
             localStorage.getItem("user");
@@ -42,7 +40,6 @@ function App() {
             return null;
         }
     });
-
 
     /* =========================
        AI CORE ANIMATION
@@ -62,16 +59,22 @@ function App() {
         let index = 0;
 
         const interval = setInterval(() => {
-            index = (index + 1) % statuses.length;
-            setAiStatus(statuses[index]);
+            index =
+                (index + 1) %
+                statuses.length;
+
+            setAiStatus(
+                statuses[index]
+            );
         }, 3200);
 
         return () => {
             clearInterval(interval);
-            setAiStatus("AI CORE ONLINE");
+            setAiStatus(
+                "AI CORE ONLINE"
+            );
         };
     }, [page]);
-
 
     /* =========================
        LOGIN
@@ -81,7 +84,6 @@ function App() {
         setUser(loggedInUser);
         setPage("dashboard");
     };
-
 
     /* =========================
        LOGOUT
@@ -100,12 +102,13 @@ function App() {
         setSelectedAnalysisId(null);
     };
 
-
     /* =========================
        PROTECTED PAGE
     ========================= */
 
-    const openProtectedPage = (targetPage) => {
+    const openProtectedPage = (
+        targetPage
+    ) => {
         if (user) {
             setPage(targetPage);
         } else {
@@ -113,39 +116,46 @@ function App() {
         }
     };
 
-
     /* =========================
        PROJECT
     ========================= */
 
     const openProject = (projectId) => {
-        setSelectedProjectId(projectId);
+        setSelectedProjectId(
+            projectId
+        );
+
         setPage("project-details");
     };
-
 
     const createProject = () => {
         setSelectedProjectId(null);
         setProjectToEdit(null);
+
         setPage("create-project");
     };
 
-
     const editProject = (project) => {
         setProjectToEdit(project);
+
         setPage("edit-project");
     };
-
 
     /* =========================
        ANALYSIS
     ========================= */
 
-    const openAnalysis = (analysisId) => {
-        setSelectedAnalysisId(analysisId);
-        setPage("feasibility-details");
-    };
+    const openAnalysis = (
+        analysisId
+    ) => {
+        setSelectedAnalysisId(
+            analysisId
+        );
 
+        setPage(
+            "feasibility-details"
+        );
+    };
 
     return (
         <div className="app">
@@ -160,13 +170,18 @@ function App() {
                     className="logo"
                     onClick={() => {
                         setPage("home");
-                        setSelectedProjectId(null);
-                        setSelectedAnalysisId(null);
+
+                        setSelectedProjectId(
+                            null
+                        );
+
+                        setSelectedAnalysisId(
+                            null
+                        );
                     }}
                 >
                     MENTORX
                 </div>
-
 
                 <div className="nav-links">
 
@@ -180,70 +195,82 @@ function App() {
                         Home
                     </a>
 
-
                     {user && (
                         <a
                             href="#dashboard"
                             onClick={(e) => {
                                 e.preventDefault();
-                                setPage("dashboard");
+
+                                setPage(
+                                    "dashboard"
+                                );
                             }}
                         >
                             Dashboard
                         </a>
                     )}
 
-
                     <a
                         href="#projects"
                         onClick={(e) => {
                             e.preventDefault();
-                            openProtectedPage("projects");
+
+                            openProtectedPage(
+                                "projects"
+                            );
                         }}
                     >
                         Projects
                     </a>
 
-
                     <a
                         href="#matchmaker"
                         onClick={(e) => {
                             e.preventDefault();
-                            openProtectedPage("matchmaker");
+
+                            openProtectedPage(
+                                "matchmaker"
+                            );
                         }}
                     >
                         Matchmaker
                     </a>
 
-
                     <a
                         href="#ai"
                         onClick={(e) => {
                             e.preventDefault();
-                            openProtectedPage("ai-mentor");
+
+                            openProtectedPage(
+                                "ai-mentor"
+                            );
                         }}
                     >
                         AI Mentor
                     </a>
 
-
                     <a
                         href="#feasibility"
                         onClick={(e) => {
                             e.preventDefault();
-                            openProtectedPage("feasibility");
+
+                            openProtectedPage(
+                                "feasibility"
+                            );
                         }}
                     >
                         Feasibility
                     </a>
-
 
                     {user && (
                         <a
                             href="#analyses"
                             onClick={(e) => {
                                 e.preventDefault();
-                                setPage("my-analyses");
+
+                                setPage(
+                                    "my-analyses"
+                                );
                             }}
                         >
                             My Analyses
@@ -252,18 +279,16 @@ function App() {
 
                 </div>
 
-
                 {user ? (
-
                     <button
                         className="login-btn"
-                        onClick={handleLogout}
+                        onClick={
+                            handleLogout
+                        }
                     >
                         Logout
                     </button>
-
                 ) : (
-
                     <button
                         className="login-btn"
                         onClick={() =>
@@ -272,11 +297,9 @@ function App() {
                     >
                         Login
                     </button>
-
                 )}
 
             </nav>
-
 
             {/* =========================
                 AUTH
@@ -284,13 +307,16 @@ function App() {
 
             {page === "login" && (
                 <Login
-                    onLogin={handleLogin}
+                    onLogin={
+                        handleLogin
+                    }
                     onGoRegister={() =>
-                        setPage("register")
+                        setPage(
+                            "register"
+                        )
                     }
                 />
             )}
-
 
             {page === "register" && (
                 <Register
@@ -303,43 +329,51 @@ function App() {
                 />
             )}
 
-
             {/* =========================
                 DASHBOARD
             ========================= */}
 
-            {page === "dashboard" && user && (
-                <Dashboard
-                    onProjects={() =>
-                        setPage("projects")
-                    }
-
-                    onMatchmaker={() =>
-                        setPage("matchmaker")
-                    }
-
-                    onAIMentor={() =>
-                        setPage("ai-mentor")
-                    }
-
-                    onFeasibility={() =>
-                        setPage("feasibility")
-                    }
-                />
-            )}
-
+            {page === "dashboard" &&
+                user && (
+                    <Dashboard
+                        onProjects={() =>
+                            setPage(
+                                "projects"
+                            )
+                        }
+                        onMatchmaker={() =>
+                            setPage(
+                                "matchmaker"
+                            )
+                        }
+                        onAIMentor={() =>
+                            setPage(
+                                "ai-mentor"
+                            )
+                        }
+                        onFeasibility={() =>
+                            setPage(
+                                "feasibility"
+                            )
+                        }
+                    />
+                )}
 
             {/* =========================
                 PROJECTS
             ========================= */}
 
-            {page === "projects" && user && (
-                <Projects
-                    onOpenProject={openProject}
-                    onCreateProject={createProject}
-                />
-            )}
-
+            {page === "projects" &&
+                user && (
+                    <Projects
+                        onOpenProject={
+                            openProject
+                        }
+                        onCreateProject={
+                            createProject
+                        }
+                    />
+                )}
 
             {/* =========================
                 CREATE PROJECT
@@ -348,13 +382,16 @@ function App() {
             {page === "create-project" &&
                 user && (
                     <ProjectForm
-                        onComplete={openProject}
+                        onComplete={
+                            openProject
+                        }
                         onCancel={() =>
-                            setPage("projects")
+                            setPage(
+                                "projects"
+                            )
                         }
                     />
                 )}
-
 
             {/* =========================
                 EDIT PROJECT
@@ -364,8 +401,12 @@ function App() {
                 user &&
                 projectToEdit && (
                     <ProjectForm
-                        project={projectToEdit}
-                        onComplete={openProject}
+                        project={
+                            projectToEdit
+                        }
+                        onComplete={
+                            openProject
+                        }
                         onCancel={() =>
                             setPage(
                                 "project-details"
@@ -373,7 +414,6 @@ function App() {
                         }
                     />
                 )}
-
 
             {/* =========================
                 PROJECT DETAILS
@@ -387,58 +427,73 @@ function App() {
                             selectedProjectId
                         }
                         onBack={() =>
-                            setPage("projects")
+                            setPage(
+                                "projects"
+                            )
                         }
-                        onEdit={editProject}
+                        onEdit={
+                            editProject
+                        }
                     />
                 )}
-
 
             {/* =========================
                 MATCHMAKER
             ========================= */}
 
-            {page === "matchmaker" && user && (
-                <Matchmaker />
-            )}
-
+            {page === "matchmaker" &&
+                user && (
+                    <Matchmaker />
+                )}
 
             {/* =========================
                 AI MENTOR
             ========================= */}
 
-            {page === "ai-mentor" && user && (
-                <AIMentor />
-            )}
-
+            {page === "ai-mentor" &&
+                user && (
+                    <AIMentor />
+                )}
 
             {/* =========================
                 FEASIBILITY
             ========================= */}
 
-            {page === "feasibility" && user && (
-                <Feasibility />
-            )}
-
+            {page === "feasibility" &&
+                user && (
+                    <Feasibility
+                        onBack={() =>
+                            setPage(
+                                "dashboard"
+                            )
+                        }
+                        onOpenAnalyses={() =>
+                            setPage(
+                                "my-analyses"
+                            )
+                        }
+                    />
+                )}
 
             {/* =========================
                 MY ANALYSES
             ========================= */}
 
-            {page === "my-analyses" && user && (
-                <MyAnalyses
-                    onOpenAnalysis={
-                        openAnalysis
-                    }
-                />
-            )}
-
+            {page === "my-analyses" &&
+                user && (
+                    <MyAnalyses
+                        onOpenAnalysis={
+                            openAnalysis
+                        }
+                    />
+                )}
 
             {/* =========================
                 FEASIBILITY DETAILS
             ========================= */}
 
-            {page === "feasibility-details" &&
+            {page ===
+                "feasibility-details" &&
                 user &&
                 selectedAnalysisId && (
                     <FeasibilityDetails
@@ -453,7 +508,6 @@ function App() {
                     />
                 )}
 
-
             {/* =========================
                 HOME
             ========================= */}
@@ -463,9 +517,7 @@ function App() {
 
                     <main className="hero hero-ai-core">
 
-                        {/* =========================
-                            LEFT HERO
-                        ========================= */}
+                        {/* LEFT HERO */}
 
                         <div className="hero-content">
 
@@ -488,7 +540,6 @@ function App() {
                                 projects.
                             </p>
 
-
                             <div className="hero-buttons">
 
                                 <button
@@ -501,7 +552,6 @@ function App() {
                                 >
                                     Explore Projects
                                 </button>
-
 
                                 <button
                                     className="secondary-btn"
@@ -516,26 +566,31 @@ function App() {
 
                             </div>
 
-
                             <div className="hero-flow">
 
                                 <span>
                                     IDEA
                                 </span>
 
-                                <i>→</i>
+                                <i>
+                                    →
+                                </i>
 
                                 <span>
                                     ANALYZE
                                 </span>
 
-                                <i>→</i>
+                                <i>
+                                    →
+                                </i>
 
                                 <span>
                                     MATCH
                                 </span>
 
-                                <i>→</i>
+                                <i>
+                                    →
+                                </i>
 
                                 <span>
                                     BUILD
@@ -545,23 +600,22 @@ function App() {
 
                         </div>
 
-
                         {/* =========================
                             AI CORE
                         ========================= */}
 
                         <div className="ai-core-stage">
 
-                            {/* Ambient glow */}
                             <div className="ai-core-glow" />
 
-                            {/* Orbital rings */}
                             <div className="ai-orbit ai-orbit-1" />
+
                             <div className="ai-orbit ai-orbit-2" />
+
                             <div className="ai-orbit ai-orbit-3" />
 
+                            {/* Status */}
 
-                            {/* Top status */}
                             <div className="ai-core-status">
 
                                 <span className="status-dot" />
@@ -572,8 +626,8 @@ function App() {
 
                             </div>
 
+                            {/* Main Panel */}
 
-                            {/* Main glass core */}
                             <div className="ai-core-panel">
 
                                 <div className="core-grid" />
@@ -584,7 +638,6 @@ function App() {
                                         PROJECT INTELLIGENCE
                                     </span>
                                 </div>
-
 
                                 <div className="robot">
 
@@ -622,8 +675,6 @@ function App() {
 
                                 </div>
 
-
-                                {/* Core pulse */}
                                 <div className="core-pulse" />
 
                                 <div className="core-bottom">
@@ -632,10 +683,7 @@ function App() {
 
                             </div>
 
-
-                            {/* =========================
-                                FLOATING DATA CARDS
-                            ========================= */}
+                            {/* TEAM */}
 
                             <div className="ai-data-card ai-card-team">
 
@@ -655,6 +703,7 @@ function App() {
 
                             </div>
 
+                            {/* FEASIBILITY */}
 
                             <div className="ai-data-card ai-card-feasible">
 
@@ -674,6 +723,7 @@ function App() {
 
                             </div>
 
+                            {/* SKILLS */}
 
                             <div className="ai-data-card ai-card-skills">
 
@@ -693,6 +743,7 @@ function App() {
 
                             </div>
 
+                            {/* TIMELINE */}
 
                             <div className="ai-data-card ai-card-time">
 
@@ -712,14 +763,14 @@ function App() {
 
                             </div>
 
-
-                            {/* Bottom AI engine line */}
                             <div className="ai-engine-line">
 
                                 <span />
+
                                 <p>
                                     MENTORX AI ENGINE
                                 </p>
+
                                 <span />
 
                             </div>
@@ -728,10 +779,7 @@ function App() {
 
                     </main>
 
-
-                    {/* =========================
-                        HERO FEATURES
-                    ========================= */}
+                    {/* FEATURES */}
 
                     <section className="features">
 
@@ -749,7 +797,6 @@ function App() {
 
                         </div>
 
-
                         <div className="feature-card">
 
                             <h3>
@@ -763,7 +810,6 @@ function App() {
                             </p>
 
                         </div>
-
 
                         <div className="feature-card">
 
