@@ -10,6 +10,7 @@ const matchRoutes = require("./routes/matchRoutes");
 const aiRoutes = require("./routes/aiRoutes");
 const feasibilityRoutes = require("./routes/feasibilityRoutes");
 const invitationRoutes = require("./routes/invitationRoutes");
+const skillRoutes = require("./routes/skillRoutes");
 
 const app = express();
 
@@ -96,6 +97,7 @@ app.use("/api/match", matchRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/feasibility", feasibilityRoutes);
 app.use("/api/invitations", invitationRoutes);
+app.use("/api/skills", skillRoutes);
 
 
 /* =========================================

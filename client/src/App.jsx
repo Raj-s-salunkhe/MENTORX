@@ -8,6 +8,7 @@ import Projects from "./Projects";
 import ProjectDetails from "./ProjectDetails";
 import Matchmaker from "./Matchmaker";
 import AIMentor from "./AIMentor";
+import SkillVerification from "./SkillVerification";
 import Feasibility from "./Feasibility";
 import MyAnalyses from "./MyAnalyses";
 import FeasibilityDetails from "./FeasibilityDetails";
@@ -180,13 +181,21 @@ function App() {
                         );
                     }}
                 >
-                    MENTORX
+                    <span className="logo-mark">
+                        M
+                    </span>
+                    <span className="logo-text">
+                        MENTORX
+                    </span>
                 </div>
 
                 <div className="nav-links">
 
                     <a
                         href="#home"
+                        data-active={
+                            page === "home"
+                        }
                         onClick={(e) => {
                             e.preventDefault();
                             setPage("home");
@@ -198,6 +207,9 @@ function App() {
                     {user && (
                         <a
                             href="#dashboard"
+                            data-active={
+                                page === "dashboard"
+                            }
                             onClick={(e) => {
                                 e.preventDefault();
 
@@ -212,6 +224,12 @@ function App() {
 
                     <a
                         href="#projects"
+                        data-active={
+                            page === "projects" ||
+                            page === "project-details" ||
+                            page === "create-project" ||
+                            page === "edit-project"
+                        }
                         onClick={(e) => {
                             e.preventDefault();
 
@@ -225,6 +243,9 @@ function App() {
 
                     <a
                         href="#matchmaker"
+                        data-active={
+                            page === "matchmaker"
+                        }
                         onClick={(e) => {
                             e.preventDefault();
 
@@ -238,6 +259,9 @@ function App() {
 
                     <a
                         href="#ai"
+                        data-active={
+                            page === "ai-mentor"
+                        }
                         onClick={(e) => {
                             e.preventDefault();
 
@@ -251,6 +275,10 @@ function App() {
 
                     <a
                         href="#feasibility"
+                        data-active={
+                            page === "feasibility" ||
+                            page === "feasibility-details"
+                        }
                         onClick={(e) => {
                             e.preventDefault();
 
@@ -262,9 +290,28 @@ function App() {
                         Feasibility
                     </a>
 
+                    <a
+                        href="#skill-verification"
+                        data-active={
+                            page === "skill-verification"
+                        }
+                        onClick={(e) => {
+                            e.preventDefault();
+
+                            openProtectedPage(
+                                "skill-verification"
+                            );
+                        }}
+                    >
+                        Skill Verification
+                    </a>
+
                     {user && (
                         <a
                             href="#analyses"
+                            data-active={
+                                page === "my-analyses"
+                            }
                             onClick={(e) => {
                                 e.preventDefault();
 
@@ -279,25 +326,36 @@ function App() {
 
                 </div>
 
-                {user ? (
-                    <button
-                        className="login-btn"
-                        onClick={
-                            handleLogout
-                        }
-                    >
-                        Logout
-                    </button>
-                ) : (
-                    <button
-                        className="login-btn"
-                        onClick={() =>
-                            setPage("login")
-                        }
-                    >
-                        Login
-                    </button>
-                )}
+                <div className="nav-actions">
+                    {user ? (
+                        <div className="nav-user">
+                            <div className="nav-user-avatar">
+                                {user?.name
+                                    ?.charAt(0)
+                                    ?.toUpperCase() ||
+                                    "U"}
+                            </div>
+                            <button
+                                className="login-btn"
+                                onClick={
+                                    handleLogout
+                                }
+                                title={`Signed in as ${user?.name || "user"}`}
+                            >
+                                Logout
+                            </button>
+                        </div>
+                    ) : (
+                        <button
+                            className="login-btn"
+                            onClick={() =>
+                                setPage("login")
+                            }
+                        >
+                            Login
+                        </button>
+                    )}
+                </div>
 
             </nav>
 
@@ -354,6 +412,11 @@ function App() {
                         onFeasibility={() =>
                             setPage(
                                 "feasibility"
+                            )
+                        }
+                        onSkillVerification={() =>
+                            setPage(
+                                "skill-verification"
                             )
                         }
                     />
@@ -453,6 +516,19 @@ function App() {
             {page === "ai-mentor" &&
                 user && (
                     <AIMentor />
+                )}
+
+            {/* =========================
+                SKILL VERIFICATION
+            ========================= */}
+
+            {page === "skill-verification" &&
+                user && (
+                    <SkillVerification
+                        onBack={() =>
+                            setPage("dashboard")
+                        }
+                    />
                 )}
 
             {/* =========================
