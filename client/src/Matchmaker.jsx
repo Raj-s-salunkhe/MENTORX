@@ -1,7 +1,112 @@
 import { useEffect, useState } from "react";
 import { apiUrl } from "./api";
 
-function Matchmaker() {
+const REQUIRED_VERIFIED_SKILLS = 2;
+
+const SKILL_CATEGORIES = {
+    python: "backend",
+    javascript: "backend",
+    nodejs: "backend",
+    java: "backend",
+    cpp: "backend",
+    react: "frontend",
+    mongodb: "database"
+};
+
+function generateMatchReasons(match, project) {
+    const reasons = [];
+    const required = (project?.skillsRequired || [])
+        .map((s) => String(s).toLowerCase().trim())
+        .filter(Boolean);
+    const recommended = (
+        project?.recommendedTechnologies || []
+    )
+        .map((s) => String(s).toLowerCase().trim())
+        .filter(Boolean);
+
+    const assessments = match.skillAssessments || [];
+    const verified = assessments.filter(
+        (a) => a.confidence === "verified"
+    );
+
+    // 1) Strong verified skill matching project requirements
+    const matchingVerified = verified
+        .filter(
+            (a) =>
+                required.includes(
+                    String(a.skill).toLowerCase().trim()
+                ) ||
+                recommended.includes(
+                    String(a.skill).toLowerCase().trim()
+                )
+        )
+        .sort((a, b) => b.proficiency - a.proficiency);
+
+    if (matchingVerified.length > 0 && matchingVerified[0].proficiency >= 60) {
+        reasons.push(
+            `✓ Strong ${matchingVerified[0].skillName} proficiency`
+        );
+    }
+
+    // 2) Fills a skill gap
+    const candidateSkills = new Set([
+        ...verified.map((a) =>
+            String(a.skill).toLowerCase().trim()
+        ),
+        ...(match.selfReportedSkills || []).map((s) =>
+            String(s).toLowerCase().trim()
+        )
+    ]);
+
+    if (match.teamCompatibility >= 50 && required.length > 0) {
+        const coveredRequired = required.filter((s) =>
+            candidateSkills.has(s)
+        );
+        if (coveredRequired.length > 0) {
+            const category =
+                SKILL_CATEGORIES[coveredRequired[0]] ||
+                "team";
+            const areaLabel =
+                category === "backend"
+                    ? "backend"
+                    : category === "frontend"
+                    ? "frontend"
+                    : category === "database"
+                    ? "database"
+                    : category === "design"
+                    ? "design"
+                    : "team";
+            reasons.push(
+                `✓ Fills a ${areaLabel} skill gap`
+            );
+        }
+    }
+
+    // 3) Strong project skill coverage
+    if (match.skillCompatibility >= 60 && required.length > 0) {
+        reasons.push("✓ Strong project skill coverage");
+    }
+
+    // 4) Good availability
+    if (match.availabilityScore >= 70) {
+        reasons.push("✓ Good availability");
+    }
+
+    // 5) Strong experience fit
+    if (match.experienceCompatibility >= 75) {
+        reasons.push("✓ Strong experience fit");
+    }
+
+    // Fallback
+    if (reasons.length === 0 && match.teamMatch >= 40) {
+        reasons.push("✓ Compatible team profile");
+    }
+
+    const unique = [...new Set(reasons)];
+    return unique.slice(0, 4);
+}
+
+function Matchmaker({ onSkillVerification }) {
     const [projects, setProjects] = useState([]);
     const [selectedProject, setSelectedProject] = useState("");
 
@@ -22,6 +127,11 @@ function Matchmaker() {
 
     const [message, setMessage] = useState("");
     const [inviteMessage, setInviteMessage] = useState("");
+
+    // ── Skill-verification gate ──
+    const [verifiedSkillCount, setVerifiedSkillCount] =
+        useState(null);
+    const [gateLoading, setGateLoading] = useState(true);
 
     const token = localStorage.getItem("token");
 
@@ -62,6 +172,43 @@ function Matchmaker() {
         };
 
         loadProjects();
+    }, []);
+
+    /*
+     * =========================================================
+     * LOAD VERIFICATION STATUS (ACCESS GATE)
+     * =========================================================
+     */
+
+    const loadVerificationStatus = async () => {
+        try {
+            const response = await fetch(
+                apiUrl("/api/match/verification-status"),
+                { headers: authHeaders }
+            );
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(
+                    data.message ||
+                        "Failed to load verification status"
+                );
+            }
+            setVerifiedSkillCount(
+                data.verifiedSkillCount || 0
+            );
+        } catch (error) {
+            console.error(
+                "Failed to load verification status:",
+                error
+            );
+            setVerifiedSkillCount(0);
+        } finally {
+            setGateLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        loadVerificationStatus();
     }, []);
 
     /*
@@ -172,6 +319,13 @@ function Matchmaker() {
             const data = await response.json();
 
             if (!response.ok) {
+                if (data.requiresVerification) {
+                    setVerifiedSkillCount(
+                        data.verifiedSkillCount || 0
+                    );
+                    setMessage(data.message || "Skill verification required");
+                    return;
+                }
                 throw new Error(
                     data.message || "Failed to find matches"
                 );
@@ -600,6 +754,33 @@ function Matchmaker() {
                 </p>
 
             </div>
+
+            {verifiedSkillCount !== null && gateLoading === false && verifiedSkillCount < REQUIRED_VERIFIED_SKILLS && (
+                <div className="matchmaker-gate">
+
+                    <div className="gate-icon">🔒</div>
+
+                    <h2>VERIFY YOUR SKILLS</h2>
+
+                    <p>
+                        Complete short skill assessments so MENTORX can match you with teammates based on your actual abilities.
+                    </p>
+
+                    <div className="gate-benefits">
+                        <span>✓ More accurate teammate matches</span>
+                        <span>✓ Better project compatibility</span>
+                        <span>✓ Verified skill profile</span>
+                    </div>
+
+                    <button
+                        className="verify-skills-btn"
+                        onClick={() => onSkillVerification()}
+                    >
+                        VERIFY MY SKILLS
+                    </button>
+
+                </div>
+            )}
 
             {/* =================================================
                 INVITATION NOTIFICATION CENTER
@@ -1050,101 +1231,45 @@ function Matchmaker() {
 
                                                 </div>
 
-                                                <div
-                                                    className="match-score-circle"
-                                                    title={`Team Match ${match.teamMatch}%`}
-                                                >
-                                                    <svg viewBox="0 0 64 64">
-                                                        <defs>
-                                                            <linearGradient
-                                                                id={`mmGrad-${userId}`}
-                                                                x1="0"
-                                                                y1="0"
-                                                                x2="1"
-                                                                y2="1"
-                                                            >
-                                                                <stop
-                                                                    offset="0%"
-                                                                    stopColor="#6675ff"
-                                                                />
-                                                                <stop
-                                                                    offset="100%"
-                                                                    stopColor="#a45cff"
-                                                                />
-                                                            </linearGradient>
-                                                        </defs>
-                                                        <circle
-                                                            cx="32"
-                                                            cy="32"
-                                                            r="26"
-                                                            className="score-ring-bg"
-                                                        />
-                                                        <circle
-                                                            cx="32"
-                                                            cy="32"
-                                                            r="26"
-                                                            className="score-ring-progress"
-                                                            strokeDasharray={
-                                                                `${(match.teamMatch / 100) * 163.36} 163.36`
-                                                            }
-                                                        />
-                                                    </svg>
-                                                    <strong>
-                                                        {match.teamMatch}
-                                                        <small>TEAM MATCH</small>
-                                                    </strong>
-                                                </div>
+                                                <div className="match-teammate-fit">
 
-                                            </div>
+                                                    <span className="fit-label">
+                                                        TEAMMATE FIT
+                                                    </span>
 
-                                            {/* ---- SCORE BAR ---- */}
-                                            <div className="match-bar-wrapper">
-
-                                                <div className="match-bar-track">
-
-                                                    <div
-                                                        className="match-bar-fill"
-                                                        style={{
-                                                            width: `${match.totalScore}%`
-                                                        }}
-                                                    />
+                                                    {/* Safe teamMatch value for comparisons */}
+{/* eslint-disable-next-line no-undef */}
+const safeTeamMatch = Number.isFinite(Number(match.teamMatch)) ? Number(match.teamMatch) : 0;
+                                                    <span className="fit-text">
+                                                        {safeTeamMatch >= 85
+                                                            ? "Strong candidate for this project"
+                                                            : safeTeamMatch >= 70
+                                                            ? "Good candidate for this project"
+                                                            : safeTeamMatch >= 50
+                                                            ? "Potential candidate for this project"
+                                                            : "Exploring fit"}
+                                                    </span>
 
                                                 </div>
 
                                             </div>
+
+                                            <span className="match-card-subtitle">
+                                                {safeTeamMatch >= 85
+                                                    ? "Strong teammate for this project"
+                                                    : safeTeamMatch >= 70
+                                                    ? "Good teammate for this project"
+                                                    : safeTeamMatch >= 50
+                                                    ? "Potential teammate for this project"
+                                                    : "Looking for a match"}
+                                            </span>
 
                                             {/* ---- SCORE BREAKDOWN ---- */}
                                             <div className="match-breakdown">
 
                                                 <div>
                                                     <span>
-                                                        Skill Match
-                                                    </span>
-
-                                                    <strong>
-                                                        {match.skillCompatibility}%
-                                                        <span className="breakdown-label">
-                                                            (30%)
-                                                        </span>
-                                                    </strong>
-                                                </div>
-
-                                                <div>
-                                                    <span>
-                                                        Team Fit
-                                                    </span>
-
-                                                    <strong>
-                                                        {match.teamCompatibility}%
-                                                        <span className="breakdown-label">
-                                                            (25%)
-                                                        </span>
-                                                    </strong>
-                                                </div>
-
-                                                <div>
-                                                    <span>
-                                                        Project Match
+                                                        Project Fit
                                                     </span>
 
                                                     <strong>
@@ -1157,13 +1282,26 @@ function Matchmaker() {
 
                                                 <div>
                                                     <span>
-                                                        Experience Match
+                                                        Skill Strength
                                                     </span>
 
                                                     <strong>
-                                                        {match.experienceCompatibility}%
+                                                        {match.skillCompatibility}%
                                                         <span className="breakdown-label">
-                                                            (15%)
+                                                            (30%)
+                                                        </span>
+                                                    </strong>
+                                                </div>
+
+                                                <div>
+                                                    <span>
+                                                        Team Gap Fill
+                                                    </span>
+
+                                                    <strong>
+                                                        {match.teamCompatibility}%
+                                                        <span className="breakdown-label">
+                                                            (25%)
                                                         </span>
                                                     </strong>
                                                 </div>
@@ -1181,71 +1319,90 @@ function Matchmaker() {
                                                     </strong>
                                                 </div>
 
+                                                <div>
+                                                    <span>
+                                                        Experience Fit
+                                                    </span>
+
+                                                    <strong>
+                                                        {match.experienceCompatibility}%
+                                                        <span className="breakdown-label">
+                                                            (15%)
+                                                        </span>
+                                                    </strong>
+                                                </div>
+
                                             </div>
 
-                                            {/* ---- SKILLS ---- */}
-                                            <div className="match-skills">
+                                            {/* ---- WHY THIS MATCH? ---- */}
+                                            <div className="match-reasons">
 
-                                                <div>
-                                                    <p className="breakdown-label">
-                                                        Skill Compatibility: {match.skillCompatibility}%
-                                                    </p>
+                                                <strong>WHY THIS MATCH?</strong>
 
-                                                    <div className="verified-skills">
-                                                        <strong>VERIFIED SKILLS</strong>
-                                                        {match.skillAssessments?.length > 0 &&
-                                                            match.skillAssessments.map(
-                                                                (assessment) => (
-                                                                    <span
-                                                                        key={
-                                                                            assessment.skillName
-                                                                        }
-                                                                    >
-                                                                        {assessment.skillName}
-                                                                        {assessment.confidence ===
-                                                                            "verified" && (
-                                                                            <span
-                                                                                className="verified-badge"
-                                                                                title={`Proficiency ${assessment.proficiency}%`}
-                                                                            >
-                                                                                ✓ {assessment.proficiency}%
-                                                                            </span>
-                                                                        )}
-                                                                        {assessment.confidence ===
-                                                                            "unverified" && (
-                                                                            <span
-                                                                                className="unverified-badge"
-                                                                                title={`Unverified proficiency ${assessment.proficiency}%`}
-                                                                            >
-                                                                                ? {assessment.proficiency}%
-                                                                            </span>
-                                                                        )}
-                                                                    </span>
-                                                                )
-                                                            )}
-                                                    </div>
+                                                {generateMatchReasons(match, projects.find((p) => p._id === selectedProject)).map(
+                                                    (reason, index) => (
+                                                        <span
+                                                            key={index}
+                                                            className="reason-item"
+                                                        >
+                                                            {reason}
+                                                        </span>
+                                                    )
+                                                )}
 
-                                                    <div className="self-reported-skills">
-                                                        <strong>SELF-REPORTED</strong>
-                                                        {match.selfReportedSkills?.length > 0 &&
-                                                            match.selfReportedSkills.map(
-                                                                (skill) => (
-                                                                    <span
-                                                                        key={skill}
-                                                                    >
-                                                                        {skill}
+                                            </div>
+
+                                            {/* ---- VERIFIED SKILLS ---- */}
+                                            <div className="verified-skills-list">
+
+                                                <strong>VERIFIED SKILLS</strong>
+
+                                                {match.skillAssessments?.length > 0 &&
+                                                    match.skillAssessments.map(
+                                                        (assessment) => (
+                                                            <span
+                                                                key={
+                                                                    assessment.skillName
+                                                                }
+                                                                className="verified-skill-row"
+                                                            >
+                                                                <span className="skill-name">
+                                                                    {assessment.skillName}
+                                                                </span>
+                                                                <span className="skill-score">
+                                                                    {Number(assessment.proficiency) || 0}%
+                                                                    {assessment.confidence ===
+                                                                        "verified" && (
+                                                                        <span
+                                                                            className="verified-badge"
+                                                                            title={`Proficiency ${Number(
+                                                                                assessment.proficiency
+                                                                            ) || 0}%`}
+                                                                        >
+                                                                            ✓
+                                                                        </span>
+                                                                    )}
+                                                                    {assessment.confidence ===
+                                                                        "unverified" && (
                                                                         <span
                                                                             className="unverified-badge"
-                                                                            title="Unverified"
+                                                                            title={`Unverified proficiency ${Number(
+                                                                                assessment.proficiency
+                                                                            ) || 0}%`}
                                                                         >
                                                                             ?
                                                                         </span>
-                                                                    </span>
-                                                                )
-                                                            )}
-                                                    </div>
+                                                                    )}
+                                                                </span>
+                                                            </span>
+                                                        )
+                                                    )}
 
-                                                </div>
+                                                {(!match.skillAssessments || match.skillAssessments.length === 0) && (
+                                                    <span className="no-verified-skills">
+                                                        No verified skills
+                                                    </span>
+                                                )}
 
                                             </div>
 

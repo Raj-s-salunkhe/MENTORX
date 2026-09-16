@@ -35,11 +35,11 @@ const calculateSkillCompatibility = (required, userSkills, assessments) => {
         );
 
         if (assessment && assessment.verified) {
-            totalScore += assessment.proficiency;
+            totalScore += Number(assessment.proficiency) || 0;
             matchedCount++;
         } else if (assessment) {
             // Unverified assessment - lower trust
-            totalScore += assessment.proficiency * 0.7;
+            totalScore += (Number(assessment.proficiency) || 0) * 0.7;
             matchedCount++;
         } else if (
             userSkills &&
@@ -119,7 +119,7 @@ const calculateTeamCompatibility = (project, user, assessments) => {
         if (assessment.verified) {
             userSkills.set(
                 normalizeSkill(assessment.skill),
-                assessment.proficiency
+                Number(assessment.proficiency) || 0
             );
         }
     }
@@ -196,6 +196,9 @@ const calculateCompatibility = (project, user, userAssessments = []) => {
         availabilityScore * 0.15
     );
 
+    // Safety: ensure totalScore is always a finite number
+    const safeTotalScore = Number.isFinite(totalScore) ? totalScore : 0;
+
     // Determine which self-reported skills have no assessment at all
     const assessedSkillKeys = new Set(
         userAssessments.map((a) => normalizeSkill(a.skill))
@@ -205,13 +208,18 @@ const calculateCompatibility = (project, user, userAssessments = []) => {
     );
 
     // Format assessments with display names and confidence labels
-    const skillAssessments = userAssessments.map((assessment) => ({
-        ...assessment,
-        skillName: displaySkillName(assessment.skill),
-        confidence: assessment.verified
-            ? "verified"
-            : "unverified"
-    }));
+    const skillAssessments = userAssessments.map((assessment) => {
+        const plain = assessment.toObject
+            ? assessment.toObject()
+            : assessment;
+        return {
+            ...plain,
+            skillName: displaySkillName(plain.skill),
+            confidence: plain.verified
+                ? "verified"
+                : "unverified"
+        };
+    });
 
     return {
         teamMatch: totalScore,
