@@ -1237,17 +1237,17 @@ function Matchmaker({ onSkillVerification }) {
                                                         TEAMMATE FIT
                                                     </span>
 
-                                                    {/* Safe teamMatch value for comparisons */}
-{/* eslint-disable-next-line no-undef */}
-const safeTeamMatch = Number.isFinite(Number(match.teamMatch)) ? Number(match.teamMatch) : 0;
                                                     <span className="fit-text">
-                                                        {safeTeamMatch >= 85
-                                                            ? "Strong candidate for this project"
-                                                            : safeTeamMatch >= 70
-                                                            ? "Good candidate for this project"
-                                                            : safeTeamMatch >= 50
-                                                            ? "Potential candidate for this project"
-                                                            : "Exploring fit"}
+                                                        {(() => {
+                                                            const safe = Number.isFinite(Number(match.teamMatch)) ? Number(match.teamMatch) : 0;
+                                                            return safe >= 85
+                                                                ? "Strong candidate for this project"
+                                                                : safe >= 70
+                                                                ? "Good candidate for this project"
+                                                                : safe >= 50
+                                                                ? "Potential candidate for this project"
+                                                                : "Exploring fit";
+                                                        })()}
                                                     </span>
 
                                                 </div>
@@ -1255,13 +1255,16 @@ const safeTeamMatch = Number.isFinite(Number(match.teamMatch)) ? Number(match.te
                                             </div>
 
                                             <span className="match-card-subtitle">
-                                                {safeTeamMatch >= 85
-                                                    ? "Strong teammate for this project"
-                                                    : safeTeamMatch >= 70
-                                                    ? "Good teammate for this project"
-                                                    : safeTeamMatch >= 50
-                                                    ? "Potential teammate for this project"
-                                                    : "Looking for a match"}
+                                                {(() => {
+                                                    const safe = Number.isFinite(Number(match.teamMatch)) ? Number(match.teamMatch) : 0;
+                                                    return safe >= 85
+                                                        ? "Strong teammate for this project"
+                                                        : safe >= 70
+                                                        ? "Good teammate for this project"
+                                                        : safe >= 50
+                                                        ? "Potential teammate for this project"
+                                                        : "Looking for a match";
+                                                })()}
                                             </span>
 
                                             {/* ---- SCORE BREAKDOWN ---- */}

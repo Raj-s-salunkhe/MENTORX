@@ -1340,8 +1340,259 @@ a {
 }
 
 /* =========================
-   AI MENTOR
+   TEAM INVITATIONS
 ========================= */
+
+.invite-center {
+    margin-bottom: 30px;
+}
+
+.invite-center-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.invite-center-header .dashboard-tag {
+    margin: 0;
+}
+
+.invite-count {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #8993b3;
+    font-size: 11px;
+}
+
+.invite-count-loading {
+    animation: spin 1s linear infinite;
+}
+
+.invite-loading {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.invite-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: #575f7d;
+}
+
+.invite-empty-icon {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 12px;
+    background: rgba(87, 95, 125, 0.3);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+}
+
+.invite-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.invite-card {
+    padding: 16px 20px;
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.045);
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.invite-person {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.invite-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    background: linear-gradient(135deg,#6675ff,#a45cff);
+    font-weight: 800;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.invite-actions {
+    margin-left: auto;
+    display: flex;
+    gap: 8px;
+}
+
+.invite-accept-btn,
+.invite-reject-btn {
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.045);
+    color: #aeb7d8;
+    font-size: 11px;
+    cursor: pointer;
+    min-width: 60px;
+    text-align: center;
+}
+
+.invite-accept-btn:hover,
+.invite-reject-btn:hover {
+    background: rgba(255,255,255,0.08);
+    color: #fff;
+}
+
+.invite-reject-btn {
+    background: rgba(255,255,255,0.02);
+}
+
+.invite-actions .invite-accept-btn {
+    order: 2;
+}
+
+.invite-actions .invite-reject-btn {
+    order: 1;
+}
+
+/* Sent Invitations Section */
+
+.sent-invites-section {
+    margin-bottom: 30px;
+}
+
+.sent-invites-heading {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.sent-invites-heading .dashboard-tag {
+    margin: 0;
+}
+
+.sent-invites-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.sent-invite-card {
+    padding: 16px 20px;
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.045);
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.sent-invite-info {
+    flex: 1;
+}
+
+.sent-invite-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: linear-gradient(135deg,#6675ff,#a45cff);
+    font-weight: 800;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.sent-invite-status {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #8993b3;
+    font-size: 11px;
+}
+
+.sent-status-badge {
+    padding: 3px 6px;
+    border-radius: 4px;
+    background: rgba(137,147,179,0.15);
+    color: #8993b3;
+    font-size: 10px;
+    text-transform: uppercase;
+}
+
+.sent-status-pending {
+    background: rgba(137,147,179,0.25);
+    color: #8993b3;
+}
+
+.cancel-invite-btn {
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: transparent;
+    color: #ff5f57;
+    font-size: 11px;
+    cursor: pointer;
+    min-width: 24px;
+    text-align: center;
+}
+
+.cancel-invite-btn:hover {
+    background: rgba(255,95,87,0.1);
+}
+
+.invite-success-message {
+    padding: 10px 16px;
+    border-radius: 10px;
+    background: rgba(102,117,255,0.15);
+    color: #6675ff;
+    font-size: 12px;
+    margin: 12px 0;
+}
+
+/* Mobile responsiveness */
+
+@media (max-width: 640px) {
+    .invite-card,
+    .sent-invite-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .sent-invite-status {
+        margin-left: 0;
+        width: 100%;
+    }
+
+    .sent-status-badge {
+        margin-top: 4px;
+    }
+
+    .invite-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+
+    .invite-accept-btn,
+    .invite-reject-btn {
+        width: 48%;
+    }
+}
 
 .ai-mentor-page {
     min-height: calc(100vh - 78px);
@@ -10033,5 +10284,413 @@ a {
     .loader-footer span {
         font-size:
             5px;
+    }
+}
+
+/* =========================================================
+   SKILL VERIFICATION UI — FINAL OVERRIDES
+   ========================================================= */
+
+.skill-verification-page {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 40px 24px 60px;
+}
+
+/* ---- Header ---- */
+
+.ai-mentor-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.ai-mentor-header .dashboard-tag {
+    color: #a494ff;
+    letter-spacing: 2px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.ai-mentor-header h1 {
+    font-size: 32px;
+    letter-spacing: -0.5px;
+    margin: 8px 0 8px;
+    color: var(--text-primary);
+}
+
+.ai-mentor-header p {
+    color: var(--text-secondary);
+    font-size: 14px;
+    max-width: 480px;
+    margin: 0 auto;
+}
+
+/* ---- Select Skill Grid ---- */
+
+.skill-select-section {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.skill-select-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 18px;
+}
+
+.skill-card {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 18px;
+    padding: 22px 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+    text-align: center;
+}
+
+.skill-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(111, 91, 246, 0.4);
+    box-shadow: 0 10px 30px rgba(111, 91, 246, 0.2);
+}
+
+.skill-card-icon {
+    font-size: 36px;
+    line-height: 1;
+    margin-bottom: 4px;
+}
+
+.skill-card h3 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.skill-start-btn {
+    margin-top: 8px;
+    padding: 9px 22px;
+    border-radius: 999px;
+    border: 1px solid rgba(111, 91, 246, 0.4);
+    background: rgba(111, 91, 246, 0.14);
+    color: #c4b5ff;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s;
+}
+
+.skill-start-btn:hover {
+    background: rgba(111, 91, 246, 0.28);
+    transform: translateY(-1px);
+}
+
+.verified-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: rgba(74, 222, 128, 0.12);
+    border: 1px solid rgba(74, 222, 128, 0.3);
+    color: #4ade80;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+/* ---- Verified Skills Summary ---- */
+
+.verified-skills-summary {
+    margin-top: 36px;
+    padding: 24px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.verified-skills-summary h3 {
+    margin: 0 0 12px;
+    font-size: 16px;
+    color: var(--text-primary);
+}
+
+.skill-tag-verified {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    background: rgba(74, 222, 128, 0.1);
+    border: 1px solid rgba(74, 222, 128, 0.25);
+    color: #4ade80;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.skill-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-secondary);
+    font-size: 12px;
+}
+
+/* ---- Questions Screen ---- */
+
+.skill-questions-section {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 24px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.skill-question-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.skill-question-header h2 {
+    margin: 0;
+    font-size: 20px;
+    color: var(--text-primary);
+}
+
+.skill-progress {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 18px;
+}
+
+.skill-progress-track {
+    flex: 1;
+    height: 6px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+}
+
+.skill-progress-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: var(--gradient-primary);
+    transition: width 0.3s ease;
+}
+
+.skill-progress span {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: 600;
+    min-width: 36px;
+}
+
+.skill-question-counter {
+    font-size: 12px;
+    color: var(--text-soft);
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+}
+
+.skill-question-card {
+    padding: 22px;
+    border-radius: 16px;
+    background: rgba(0, 0, 0, 0.22);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    margin-bottom: 18px;
+}
+
+.skill-question-card h3 {
+    margin: 0 0 16px;
+    font-size: 16px;
+    color: var(--text-primary);
+    line-height: 1.5;
+}
+
+.skill-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.skill-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.03);
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--text-secondary);
+    transition: background 0.15s, border-color 0.15s;
+    text-align: left;
+    width: 100%;
+}
+
+.skill-option:hover {
+    background: rgba(111, 91, 246, 0.1);
+    border-color: rgba(111, 91, 246, 0.25);
+}
+
+.skill-option-selected {
+    background: rgba(111, 91, 246, 0.18);
+    border-color: rgba(111, 91, 246, 0.5);
+    color: #e0ddff;
+}
+
+.option-letter {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: rgba(111, 91, 246, 0.15);
+    color: #b4a8ff;
+    font-size: 12px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.skill-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+/* ---- Result Screen ---- */
+
+.skill-result-section {
+    max-width: 460px;
+    margin: 0 auto;
+}
+
+.skill-result-card {
+    padding: 32px 24px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    text-align: center;
+}
+
+.result-icon {
+    font-size: 44px;
+    margin-bottom: 10px;
+}
+
+.skill-result-card h2 {
+    margin: 0 0 4px;
+    font-size: 20px;
+    color: var(--text-primary);
+}
+
+.skill-result-card > p {
+    color: var(--text-secondary);
+    font-size: 13px;
+    margin-bottom: 16px;
+}
+
+.result-score {
+    margin-bottom: 14px;
+}
+
+.result-score strong {
+    font-size: 44px;
+    font-weight: 800;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.result-score span {
+    display: block;
+    font-size: 12px;
+    color: var(--text-soft);
+    margin-top: 2px;
+}
+
+.result-details {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 18px;
+}
+
+.verified-badge-lg {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 22px;
+    border-radius: 999px;
+    background: rgba(74, 222, 128, 0.12);
+    border: 1px solid rgba(74, 222, 128, 0.35);
+    color: #4ade80;
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 20px;
+}
+
+/* ---- Mobile ---- */
+
+@media (max-width: 600px) {
+    .skill-select-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+
+    .skill-card {
+        padding: 16px 10px;
+        border-radius: 14px;
+    }
+
+    .skill-card-icon {
+        font-size: 28px;
+    }
+
+    .skill-card h3 {
+        font-size: 13px;
+    }
+
+    .skill-start-btn {
+        padding: 7px 14px;
+        font-size: 11px;
+    }
+
+    .skill-questions-section {
+        padding: 16px;
+    }
+
+    .skill-question-card h3 {
+        font-size: 14px;
+    }
+
+    .skill-option {
+        padding: 10px 12px;
+        font-size: 13px;
+    }
+
+    .skill-result-card {
+        padding: 24px 16px;
+    }
+
+    .result-score strong {
+        font-size: 36px;
     }
 }
