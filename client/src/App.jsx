@@ -556,6 +556,9 @@ function App() {
             {page === "my-analyses" &&
                 user && (
                     <MyAnalyses
+                        onBack={() =>
+                            setPage("dashboard")
+                        }
                         onOpenAnalysis={
                             openAnalysis
                         }
