@@ -1254,19 +1254,6 @@ function Matchmaker({ onSkillVerification }) {
 
                                             </div>
 
-                                            <span className="match-card-subtitle">
-                                                {(() => {
-                                                    const safe = Number.isFinite(Number(match.teamMatch)) ? Number(match.teamMatch) : 0;
-                                                    return safe >= 85
-                                                        ? "Strong teammate for this project"
-                                                        : safe >= 70
-                                                        ? "Good teammate for this project"
-                                                        : safe >= 50
-                                                        ? "Potential teammate for this project"
-                                                        : "Looking for a match";
-                                                })()}
-                                            </span>
-
                                             {/* ---- SCORE BREAKDOWN ---- */}
                                             <div className="match-breakdown">
 

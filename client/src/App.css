@@ -164,6 +164,32 @@ a {
 
 .login-btn:hover { transform: translateY(-2px); background: rgba(255,255,255,0.12); }
 
+.nav-actions {
+    display: flex;
+    align-items: center;
+}
+
+.nav-user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.nav-user-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #7f8bff, #de81ff);
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 14px;
+    box-shadow: 0 4px 14px rgba(127, 139, 255, 0.35);
+}
+
 /* =========================
    HERO
 ========================= */
@@ -10692,5 +10718,261 @@ a {
 
     .result-score strong {
         font-size: 36px;
+    }
+}
+
+/* =========================================================
+   MATCHMAKER FINAL UI FIXES (Issue #2 fix)
+   ========================================================= */
+
+/* Hide redundant subtitle - TEAMMATE FIT already shows the message */
+.match-card-subtitle {
+    display: none;
+}
+
+/* Score breakdown: 2x2 grid for 5 items (last item takes full width) */
+.match-breakdown {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px 14px;
+    margin-top: 14px;
+}
+
+.match-breakdown > div:nth-child(5) {
+    grid-column: span 2;
+    justify-self: center;
+}
+
+/* WHY THIS MATCH - each reason on its own row */
+.match-reasons .reason-item {
+    display: block;
+    width: 100%;
+    padding: 6px 0;
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+/* Verified Skills - proper spacing */
+.verified-skills-list strong {
+    margin-bottom: 12px;
+}
+
+.verified-skill-row {
+    padding: 8px 0;
+}
+
+/* TeamMatch display fix - remove the redundant element entirely */
+/* The TEAMMATE FIT already shows the message, subtitle is now hidden */
+
+/* =========================================================
+   MATCHMAKER FINAL UI FIXES
+   ========================================================= */
+
+/* Match card header: user info on left, TEAMMATE FIT on right */
+.match-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.match-user {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* TEAMMATE FIT badge - stands alone, not concatenated with subtitle */
+.match-teammate-fit {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 80px;
+    text-align: center;
+}
+
+.fit-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin-bottom: 2px;
+}
+
+.fit-text {
+    font-size: 11px;
+    color: var(--text-primary);
+    line-height: 1.2;
+}
+
+/* SUBTITLE removed - redundant since we have TEAMMATE FIT text above */
+
+/* Score breakdown: 5 scores in 2 rows, 3 columns on desktop */
+.match-breakdown {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px 14px;
+    margin-top: 14px;
+}
+
+.match-breakdown > div {
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.match-breakdown > div:nth-child(odd) {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.match-breakdown span {
+    display: block;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--text-soft);
+}
+
+.match-breakdown strong {
+    display: block;
+    margin-top: 4px;
+    font-size: 13px;
+    color: var(--text-primary);
+}
+
+.breakdown-label {
+    display: block;
+    font-size: 8px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+}
+
+/* WHY THIS MATCH? - each reason on its own line */
+.match-reasons {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.025);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.match-reasons strong {
+    font-size: 11px;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--accent-4);
+    margin-bottom: 6px;
+    display: block;
+}
+
+.reason-item {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.reason-item:first-of-type::before {
+    content: "✓ ";
+}
+
+/* VERIFIED SKILLS - display with proficiency numbers */
+.verified-skills-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.025);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.verified-skills-list strong {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--accent-4);
+    margin-bottom: 8px;
+}
+
+.verified-skill-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+    color: var(--text-primary);
+    padding: 4px 0;
+    gap: 8px;
+}
+
+.verified-skill-row .skill-name {
+    flex-shrink: 0;
+}
+
+.verified-skill-row .skill-score {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-primary);
+}
+
+/* Invite button - full width at bottom */
+.invite-btn {
+    width: 100%;
+    margin-top: 16px;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(111, 91, 246, 0.16);
+    color: #c0c6ff;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    transition: background 0.15s, transform 0.1s;
+}
+
+.invite-btn:hover {
+    background: rgba(111, 91, 246, 0.28);
+}
+
+.invite-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.invite-btn.invite-btn-sent {
+    background: rgba(74, 222, 128, 0.15);
+    border-color: rgba(74, 222, 128, 0.4);
+    color: #4ade80;
+}
+
+.invite-btn.sent {
+    background: rgba(74, 222, 128, 0.1);
+}
+
+/* No verified skills text */
+.no-verified-skills {
+    font-size: 12px;
+    color: var(--text-soft);
+    font-style: italic;
+    margin-top: 8px;
+}
+
+/* Responsive: 2-column grid */
+@media (max-width: 768px) {
+    .matches-grid {
+        grid-template-columns: 1fr;
     }
 }

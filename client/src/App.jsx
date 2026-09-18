@@ -181,9 +181,7 @@ function App() {
                         );
                     }}
                 >
-                    <span className="logo-mark">
-                        M
-                    </span>
+                    <span className="logo-mark" />
                     <span className="logo-text">
                         MENTORX
                     </span>
