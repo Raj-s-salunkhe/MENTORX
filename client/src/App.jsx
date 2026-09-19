@@ -678,181 +678,125 @@ function App() {
                         </div>
 
                         {/* =========================
-                            AI CORE
+                            PROJECT INTELLIGENCE
                         ========================= */}
 
-                        <div className="ai-core-stage">
+                        <div className="pi-stage">
+                            <div className="pi-stage-inner">
 
-                            <div className="ai-core-glow" />
+                            <svg
+                                className="pi-connections"
+                                aria-hidden="true"
+                                viewBox="0 0 480 480"
+                                preserveAspectRatio="xMidYMid meet"
+                            >
 
-                            <div className="ai-orbit ai-orbit-1" />
+                                <g className="pi-line-glow">
 
-                            <div className="ai-orbit ai-orbit-2" />
+                                    <line x1="240" y1="225" x2="240" y2="70" />
 
-                            <div className="ai-orbit ai-orbit-3" />
+                                    <line x1="240" y1="225" x2="145" y2="225" />
 
-                            {/* Status */}
+                                    <line x1="240" y1="225" x2="369" y2="225" />
 
-                            <div className="ai-core-status">
+                                    <line x1="240" y1="225" x2="240" y2="394" />
 
-                                <span className="status-dot" />
+                                    <line x1="240" y1="394" x2="240" y2="454" />
 
-                                <span>
-                                    {aiStatus}
-                                </span>
+                                </g>
 
-                            </div>
+                                <g className="pi-line-sharp">
 
-                            {/* Main Panel */}
+                                    <line x1="240" y1="225" x2="240" y2="70" />
 
-                            <div className="ai-core-panel">
+                                    <line x1="240" y1="225" x2="145" y2="225" />
 
-                                <div className="core-grid" />
+                                    <line x1="240" y1="225" x2="369" y2="225" />
 
-                                <div className="core-label">
-                                    MENTORX
-                                    <span>
-                                        PROJECT INTELLIGENCE
-                                    </span>
-                                </div>
+                                    <line x1="240" y1="225" x2="240" y2="394" />
 
-                                <div className="robot">
+                                    <line x1="240" y1="394" x2="240" y2="454" />
 
-                                    <div
-                                        className="mentor-mascot"
-                                        role="img"
-                                        aria-label="MENTORX AI mascot"
-                                    >
+                                </g>
 
-                                        <div className="mascot-antenna" />
+                                <polygon
+                                    points="240,466 233,453 247,453"
+                                    className="pi-arrow"
+                                />
 
-                                        <div className="mascot-head">
+                            </svg>
 
-                                            <div className="mascot-face">
+                            <div className="pi-glow" />
 
-                                                <span className="mascot-eye mascot-eye-left" />
+                            {/* CENTRAL NODE */}
 
-                                                <span className="mascot-eye mascot-eye-right" />
+                            <div className="pi-center">
 
-                                            </div>
+                                <span className="pi-ring pi-ring-1" />
 
-                                        </div>
+                                <span className="pi-ring pi-ring-2" />
 
-                                        <div className="mascot-body">
+                                <div className="pi-card">
 
-                                            <span className="mascot-core" />
-
-                                        </div>
-
-                                        <span className="mascot-arm mascot-arm-left" />
-
-                                        <span className="mascot-arm mascot-arm-right" />
-
-                                    </div>
-
-                                </div>
-
-                                <div className="core-pulse" />
-
-                                <div className="core-bottom">
-                                    AI ENGINE ACTIVE
-                                </div>
-
-                            </div>
-
-                            {/* TEAM */}
-
-                            <div className="ai-data-card ai-card-team">
-
-                                <div className="ai-card-icon">
-                                    ◈
-                                </div>
-
-                                <div>
-                                    <span>
-                                        TEAM MATCH
+                                    <span className="pi-eyebrow">
+                                        MENTORX
                                     </span>
 
-                                    <strong>
-                                        94%
-                                    </strong>
+                                    <strong>PROJECT</strong>
+
+                                    <strong>INTELLIGENCE</strong>
+
+                                    <span className="pi-core" />
+
                                 </div>
 
                             </div>
 
-                            {/* FEASIBILITY */}
+                            {/* SATELLITES */}
 
-                            <div className="ai-data-card ai-card-feasible">
+                            <div className="pi-node pi-node-top">
 
-                                <div className="ai-card-icon">
-                                    ◉
-                                </div>
+                                <span className="pi-icon">◈</span>
 
-                                <div>
-                                    <span>
-                                        FEASIBILITY
-                                    </span>
-
-                                    <strong>
-                                        87 / 100
-                                    </strong>
-                                </div>
+                                <span>AI ANALYSIS</span>
 
                             </div>
 
-                            {/* SKILLS */}
+                            <div className="pi-node pi-node-left">
 
-                            <div className="ai-data-card ai-card-skills">
+                                <span className="pi-icon">✦</span>
 
-                                <div className="ai-card-icon">
-                                    ✦
-                                </div>
-
-                                <div>
-                                    <span>
-                                        SKILL GAP
-                                    </span>
-
-                                    <strong>
-                                        3 skills
-                                    </strong>
-                                </div>
+                                <span>VERIFIED SKILLS</span>
 
                             </div>
 
-                            {/* TIMELINE */}
+                            <div className="pi-node pi-node-right">
 
-                            <div className="ai-data-card ai-card-time">
+                                <span className="pi-icon">◈</span>
 
-                                <div className="ai-card-icon">
-                                    ◷
-                                </div>
-
-                                <div>
-                                    <span>
-                                        TIMELINE
-                                    </span>
-
-                                    <strong>
-                                        28 days
-                                    </strong>
-                                </div>
+                                <span>TEAM</span>
 
                             </div>
 
-                            <div className="ai-engine-line">
+                            <div className="pi-node pi-node-bottom">
 
-                                <span />
+                                <span className="pi-icon">◉</span>
 
-                                <p>
-                                    MENTORX AI ENGINE
-                                </p>
+                                <span>FEASIBILITY</span>
 
-                                <span />
+                            </div>
+
+                            <div className="pi-node pi-node-mentor">
+
+                                <span className="pi-icon">✦</span>
+
+                                <span>AI MENTOR</span>
 
                             </div>
 
                         </div>
+
+                    </div>
 
                     </main>
 
